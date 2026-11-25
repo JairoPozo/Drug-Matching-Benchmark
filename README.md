@@ -91,10 +91,13 @@ False accepts and calibration are at the best-F1 threshold.
 | `dummy`: fuzzy text similarity | 0.557 | 0.776 | 0.432 | 0.422 |
 | `rules --param stage=1`: same ingredients only | 0.619 | 0.811 | 0.392 | 0.335 |
 | `rules --param stage=2`: + strengths compared as numbers | 0.764 | 0.900 | 0.214 | 0.186 |
+| `rules --param stage=3`: + dose form compatibility learned from train | **0.850** | **0.934** | 0.157 | **0.088** |
 
-No matcher reaches 95% precision yet. The rule stages come from a manual review of 40 dev
-cases: next are dose form compatibility, the basis of strength (salt vs. moiety, e.g. sodium
-fluoride vs. fluoride ion) and a calibrated score.
+Stage 3 is the first to reach **95% precision**: at that threshold it accepts 51% of the dev
+queries automatically (false accept rate 5%) and abstains on 93.5% of the products that are not
+in the catalog. The rule stages come from a manual review of 40 dev cases. Next: the basis of
+strength (salt vs. moiety, e.g. sodium fluoride vs. fluoride ion; per-actuation sprays), then a
+calibrated score to accept more queries at the same precision.
 
 ## Rules of the benchmark
 
@@ -106,7 +109,8 @@ fluoride vs. fluoride ion) and a calibrated score.
   records which run in `metrics.json` (`thresholds_from`).
 - **The query format is frozen before test is evaluated.** It is never changed after looking at
   test results.
-- **Allowed resources for a matcher**: the query text and the catalog, plus RxNorm's own names,
+- **Allowed resources for a matcher**: the query text and the catalog; the **train split**, only
+  its rows whose concept is in the catalog (never dev or test labels); plus RxNorm's own names,
   synonyms and attributes (`RXNCONSO`, `RXNREL`, `RXNSAT`, e.g. ingredient synonyms or the basis
   of strength). **Not allowed**: NDC codes and other product-level attributes stored in RxNorm
   (`RXNSAT` NDC, LABELER, SPL_SET_ID, ...), MTHSPL product names (`DP`, `MTH_RXN_DP` in

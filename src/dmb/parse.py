@@ -52,9 +52,10 @@ class ParsedQuery:
     ingredients: list[QueryIngredient]
     form: str
     route: str
+    package: str = ""  # text after form and route: package description and labeler
 
 
-def _form_and_route(rest: str) -> tuple[str, str]:
+def _form_and_route(rest: str) -> tuple[str, str, str]:
     routes, end = [], None
     for m in _ROUTE_RE.finditer(rest):
         if end is None or not rest[end : m.start()].strip(" ,"):
@@ -66,13 +67,14 @@ def _form_and_route(rest: str) -> tuple[str, str]:
             break
     if end is None:
         form = re.match(r"[^\d]*", rest).group(0).strip(" ,")
-    return form, ", ".join(routes)
+        end = len(form)
+    return form, ", ".join(routes), rest[end:].strip(" ,")
 
 
 def parse_query(text: str) -> ParsedQuery:
     m = NDC_STRENGTH.search(text)
     if not m:
-        return ParsedQuery([], "", "")
+        return ParsedQuery([], "", "", text)
     ingredients, name = [], text[: m.start()]
     while True:
         ingredients.append(QueryIngredient(name.strip(" ,"), parse_ndc_strength(m), m.group(0)))
@@ -83,8 +85,8 @@ def parse_query(text: str) -> ParsedQuery:
                 name, m = text[pos + 2 : nxt.start()], nxt
                 continue
         break
-    form, route = _form_and_route(text[pos:].strip())
-    return ParsedQuery(ingredients, form, route)
+    form, route, package = _form_and_route(text[pos:].strip())
+    return ParsedQuery(ingredients, form, route, package)
 
 
 @dataclass

@@ -153,6 +153,82 @@ def test_rules_block_by_ingredient_and_compare_strengths():
 
 def test_rules_stages_and_labels():
     assert RulesMatcher(stage="1").label == "rules-stage1"
-    assert get_matcher("rules").label == "rules-stage2"
+    assert get_matcher("rules").label == "rules-stage3"  # default: latest stage
     with pytest.raises(ValueError):
         RulesMatcher(stage=7)
+
+
+def _form_model():
+    from dmb.forms import FormModel
+
+    rows = (
+        [("A DRUGA 5 mg/1 TABLET ORAL 10 TABLET in 1 BOTTLE Lab", "Oral Tablet")] * 6
+        + [("B NAF 1.5 mg/g PASTE, DENTIFRICE DENTAL 100 g in 1 TUBE Lab", "Toothpaste")] * 6
+        + [("C NAF 1 mg/mL MOUTHWASH DENTAL 500 mL in 1 BOTTLE Lab", "Mouthwash")] * 6
+        + [
+            (
+                "D Y 1 mg/mL INJECTION, SOLUTION SUBCUTANEOUS 1 mL in 1 SYRINGE Lab",
+                "Prefilled Syringe",
+            )
+        ]
+        * 6
+        + [("E Y 1 mg/mL INJECTION, SOLUTION SUBCUTANEOUS 10 mL in 1 VIAL Lab", "Injection")] * 6
+    )
+    return FormModel().fit(rows)
+
+
+def test_form_model_rules_out_and_ranks_dose_forms():
+    fm = _form_model()
+    paste = fm.scores(
+        "Z NAF 1.1 mg/g PASTE, DENTIFRICE DENTAL 50 g in 1 TUBE Lab", ["Toothpaste", "Mouthwash"]
+    )
+    assert paste["Mouthwash"] is None and paste["Toothpaste"] > 0  # never seen together: ruled out
+    syringe = fm.scores(
+        "Z Y 2 mg/mL INJECTION, SOLUTION SUBCUTANEOUS 1 mL in 1 SYRINGE Lab",
+        ["Injection", "Prefilled Syringe"],
+    )
+    assert syringe["Prefilled Syringe"] > syringe["Injection"]  # the container decides
+    vial = fm.scores(
+        "Z Y 2 mg/mL INJECTION, SOLUTION SUBCUTANEOUS 2 mL in 1 VIAL Lab",
+        ["Injection", "Prefilled Syringe"],
+    )
+    assert vial["Injection"] > vial["Prefilled Syringe"]
+    unseen = fm.scores("Z Q 1 mg/1 WAFER ORAL 1 WAFER in 1 BOX Lab", ["Oral Wafer", "Oral Tablet"])
+    assert unseen == {"Oral Wafer": 1.0, "Oral Tablet": 1.0}  # no information: nothing ruled out
+
+
+def test_container_priority():
+    from dmb.forms import container
+
+    assert container("1 AUTO-INJECTOR in 1 CARTON / 1 mL in 1 AUTO-INJECTOR") == "auto-injector"
+    assert container("5 SYRINGE in 1 CARTON / 1 mL in 1 SYRINGE, GLASS") == "syringe"
+    assert container("100 TABLET in 1 BOTTLE") == "other"
+
+
+def test_rules_stage3_drops_incompatible_forms():
+    vocab = Vocab(
+        name_to_in={"sodium fluoride": frozenset({"IN9"})},
+        dose_forms=["Toothpaste", "Mouthwash"],
+    )
+    catalog = pl.DataFrame(
+        {
+            "rxcui": ["10", "11"],
+            "name": [
+                "sodium fluoride 1 MG/ML Mouthwash",
+                "sodium fluoride 0.0024 MG/MG Toothpaste",
+            ],
+        }
+    )
+    m = RulesMatcher(stage=3)
+    m.fit(catalog, vocab=vocab, form_model=_form_model())
+    c = m.match("Kids Paste SODIUM FLUORIDE 1.5 mg/g PASTE, DENTIFRICE DENTAL 119 g in 1 TUBE Lab")
+    assert [r for r, _ in c] == ["11"]  # the mouthwash is not even a candidate
+    m2 = RulesMatcher(stage=2)
+    m2.fit(catalog, vocab=vocab)
+    assert {
+        r
+        for r, _ in m2.match("Kids Paste SODIUM FLUORIDE 1.5 mg/g PASTE, DENTIFRICE DENTAL 1 TUBE")
+    } == {
+        "10",
+        "11",
+    }
