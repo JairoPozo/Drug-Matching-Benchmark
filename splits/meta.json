@@ -5,5 +5,15 @@
   "n_test": 2000,
   "group_key": "brand + ingredients with strength + dosage form, lowercased",
   "unit": "one product per group; a group never appears in two splits",
-  "stratified_by": "product_type (quotas = share of products of each type)"
+  "stratified_by": "product_type (quotas = share of products of each type)",
+  "extra_splits": {
+    "test2": {
+      "method": "grouped-stratified-v1",
+      "seed": 4242,
+      "n": 2000,
+      "drawn_from": "groups not used by dev, test or earlier extra splits (the train pool)",
+      "stratified_by": "product_type, with the mix of all eligible products (as dev/test)",
+      "created_at": "2026-11-25T23:48:50+00:00"
+    }
+  }
 }

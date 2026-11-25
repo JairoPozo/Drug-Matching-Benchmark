@@ -11,17 +11,21 @@ Match definition (v0.1):
   share a group. Dev and test each take one product from distinct groups, drawn with a fixed seed
   and stratified by product type so the prescription/OTC mix matches the data. The IDs are
   written to splits/*.txt and, once those files exist, they are reused instead of regenerated.
-- Train: every eligible product whose group is not used by dev or test (derived, rebuilt on each
-  run). The other members of dev/test groups are left out of every split, so no group crosses
-  sides. Train is for stage 3; its rows whose concept was held out (in_catalog = False) are NIL
-  examples, and their gold_rxcui must not be used as a training target.
+- Extra test splits (e.g. test2, for a later version): drawn the same way from the groups that
+  were in train, then frozen like dev and test; recorded under "extra_splits" in meta.json.
+- Train: every eligible product whose group is not used by dev, test or an extra split (derived,
+  rebuilt on each run). The other members of dev/test groups are left out of every split, so no
+  group crosses sides. Train is for stages 3-5; its rows whose concept was held out
+  (in_catalog = False) are NIL examples, and their gold_rxcui must not be a training target.
 """
 
 from __future__ import annotations
 
 import random
+import re
 import subprocess
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 
 import polars as pl
@@ -41,6 +45,7 @@ from dmb.ndc import load_products
 from dmb.rxnorm import read_rxnconso, scd_catalog, tty_counts
 
 SPLITS = ("dev", "test")  # frozen, sampled once
+EXTRA_SPLIT_SEED = 4242  # seed for extra test splits (distinct from the dev/test seed)
 TRAIN = "train"  # derived: eligible products minus dev and test
 
 
@@ -119,13 +124,18 @@ def _quotas(n: int, shares: dict[str, float]) -> dict[str, int]:
 
 
 def sample_grouped_splits(
-    queries: pl.DataFrame, n_dev: int, n_test: int, seed: int
+    queries: pl.DataFrame,
+    n_dev: int,
+    n_test: int,
+    seed: int,
+    shares: dict[str, float] | None = None,
 ) -> dict[str, list[str]]:
     """Dev and test: one product from each of n_dev + n_test distinct groups.
 
     Groups are drawn uniformly within each product type (prescription, OTC, ...), with quotas
     equal to that type's share of products. Drawing groups uniformly over everything would
-    over-represent OTC products, whose store brands create many small groups.
+    over-represent OTC products, whose store brands create many small groups. `shares` overrides
+    the type mix (extra test splits use the mix of all eligible products, like dev and test).
     """
     members: dict[str, list[str]] = {}
     types: dict[str, Counter] = {}
@@ -134,8 +144,9 @@ def sample_grouped_splits(
         types.setdefault(key, Counter())[ptype or ""] += 1
     # A group's type is its most common product type (ties broken by name).
     group_type = {g: min(c.items(), key=lambda kv: (-kv[1], kv[0]))[0] for g, c in types.items()}
-    n_products = Counter(t or "" for t in queries["product_type"].to_list())
-    shares = {t: k / queries.height for t, k in n_products.items()}
+    if shares is None:
+        n_products = Counter(t or "" for t in queries["product_type"].to_list())
+        shares = {t: k / queries.height for t, k in n_products.items()}
     q_dev, q_test = _quotas(n_dev, shares), _quotas(n_test, shares)
 
     rng = random.Random(seed)
@@ -224,6 +235,9 @@ def build(
     n_test: int = N_TEST,
     holdout_frac: float = HOLDOUT_FRAC,
     resample_splits: bool = False,
+    add_split: str | None = None,
+    extra_size: int = N_TEST,
+    extra_seed: int = EXTRA_SPLIT_SEED,
     log=print,
 ) -> dict:
     conso_path = paths.rrf_dir / "RXNCONSO.RRF"
@@ -254,6 +268,9 @@ def build(
 
     split_ids = make_or_load_splits(
         queries, paths.splits, n_dev, n_test, seed, resample=resample_splits, log=log
+    )
+    split_ids |= load_or_make_extra_splits(
+        queries, split_ids, paths.splits, add_split, extra_size, extra_seed, log=log
     )
     split_ids[TRAIN] = train_ids(queries, split_ids)
     reserved = queries.height - sum(len(v) for v in split_ids.values())
@@ -328,9 +345,61 @@ def build(
     return stats
 
 
+def load_or_make_extra_splits(
+    queries: pl.DataFrame,
+    frozen: dict[str, list[str]],
+    splits_dir: Path,
+    add: str | None,
+    n: int,
+    seed: int,
+    log=print,
+) -> dict[str, list[str]]:
+    """Reuse the extra test splits listed in meta.json and, if asked, draw a new one.
+
+    A new split takes one product from each of n groups that are not used by any frozen split
+    (the train pool), stratified by product type like dev and test. Its groups leave train.
+    """
+    meta_path = splits_dir / "meta.json"
+    meta = read_json(meta_path, {}) or {}
+    extras = meta.get("extra_splits", {})
+    eligible = set(queries["product_ndc"].to_list())
+    out: dict[str, list[str]] = {}
+    for name in extras:
+        ids = _read_ids(splits_dir / f"{name}.txt")
+        missing = [i for i in ids if i not in eligible]
+        if missing:
+            log(f"[warn] {len(missing)} of {len(ids)} {name} IDs are no longer eligible; skipped")
+        out[name] = [i for i in ids if i in eligible]
+    if add:
+        if not re.fullmatch(r"test\d+", add):
+            raise ValueError("An extra split is named test2, test3, ...")
+        if add in out or (splits_dir / f"{add}.txt").exists():
+            raise RuntimeError(f"{add} already exists: frozen splits are never redrawn")
+        used = {i for ids in (*frozen.values(), *out.values()) for i in ids}
+        used_groups = set(queries.filter(pl.col("product_ndc").is_in(list(used)))["group_key"])
+        pool = queries.filter(~pl.col("group_key").is_in(list(used_groups)))
+        # Same product-type mix as dev and test (all eligible products), not the pool's.
+        types = Counter(t or "" for t in queries["product_type"].to_list())
+        shares = {t: k / queries.height for t, k in types.items()}
+        picked = sample_grouped_splits(pool, n, 0, seed, shares=shares)["dev"]
+        _write_ids(splits_dir / f"{add}.txt", picked)
+        extras[add] = {
+            "method": SPLIT_METHOD,
+            "seed": seed,
+            "n": n,
+            "drawn_from": "groups not used by dev, test or earlier extra splits (the train pool)",
+            "stratified_by": "product_type, with the mix of all eligible products (as dev/test)",
+            "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        }
+        write_json(meta_path, meta | {"extra_splits": extras})
+        log(f"[splits] created {add}.txt: {len(picked)} products from the train pool, seed={seed}")
+        out[add] = picked
+    return out
+
+
 def train_ids(queries: pl.DataFrame, frozen: dict[str, list[str]]) -> list[str]:
     """Every eligible product whose group is not used by a frozen split."""
-    used = {i for s in SPLITS for i in frozen.get(s, [])}
+    used = {i for s, ids in frozen.items() if s != TRAIN for i in ids}
     eval_groups = set(queries.filter(pl.col("product_ndc").is_in(list(used)))["group_key"])
     return sorted(queries.filter(~pl.col("group_key").is_in(list(eval_groups)))["product_ndc"])
 

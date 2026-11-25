@@ -36,8 +36,13 @@ class FrozenSplitError(PermissionError):
     pass
 
 
+def is_test_split(split: str) -> bool:
+    """test and the extra test splits (test2, test3...) are frozen and evaluated once."""
+    return split == "test" or (split.startswith("test") and split[4:].isdigit())
+
+
 def _guard_test(paths: Paths, split: str, final: bool, force_rerun: bool, label: str) -> None:
-    if split != "test":
+    if not is_test_split(split):
         return
     if not final:
         raise FrozenSplitError(
@@ -45,10 +50,14 @@ def _guard_test(paths: Paths, split: str, final: bool, force_rerun: bool, label:
         )
     log_path = paths.reports / TEST_LOG
     lines = log_path.read_text(encoding="utf-8").splitlines() if log_path.exists() else []
-    done = [ln for ln in lines if len(ln.split("\t")) > 1 and ln.split("\t")[1] == label]
+    done = [
+        ln
+        for ln in lines
+        if len(parts := ln.split("\t")) > 2 and parts[1] == label and parts[2].endswith(f"_{split}")
+    ]
     if done and not force_rerun:
         raise FrozenSplitError(
-            f"{label} was already evaluated on test (see {log_path}). Re-running needs "
+            f"{label} was already evaluated on {split} (see {log_path}). Re-running needs "
             "--force-rerun, and the extra run stays in the log."
         )
 
@@ -136,13 +145,13 @@ def evaluate(
     params: dict | None = None,
     log=print,
 ) -> Path:
-    if split not in ("dev", "test"):
-        raise ValueError("split must be 'dev' or 'test'")
+    if split != "dev" and not is_test_split(split):
+        raise ValueError("split must be dev, test or an extra test split (test2, ...)")
     matcher = get_matcher(matcher_name, **(params or {}))
     label = matcher.label  # name + params, e.g. "rules-stage2"
     _guard_test(paths, split, final, force_rerun, label)
     dev_ref = None
-    if split == "test":
+    if is_test_split(split):
         dev_ref = _dev_reference(paths, label)
         if dev_ref is None:
             raise FrozenSplitError(
@@ -235,7 +244,7 @@ def evaluate(
         }
     _plot_pr(curve, mark, run_dir / "pr_curve.png", f"{label} on {split}")
 
-    if split == "test":
+    if is_test_split(split):
         with (paths.reports / TEST_LOG).open("a", encoding="utf-8") as f:
             f.write(f"{metrics['created_at']}\t{label}\t{run_dir.name}\n")
 

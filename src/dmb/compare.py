@@ -183,7 +183,7 @@ def compare(paths: Paths, labels: list[str], split: str, version: str | None, lo
         if ids_ref is not None and ids != ids_ref:
             raise RuntimeError("Runs are not on the same products")
         ids_ref = ids
-        if frozen and split == "test":
+        if frozen and split.startswith("test"):
             want = frozen["matchers"][label]["dev_run"]
             checks.append(
                 (f"{label} used the frozen dev thresholds", m["thresholds_from"] == want, want)

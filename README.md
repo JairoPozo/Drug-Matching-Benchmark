@@ -19,6 +19,12 @@ Output: `(product, concept, confidence)`.
 
 > Status: **v0.1.0.** Test evaluated once per matcher on 2026-11-25, from commit `2a8ae99`
 > (tag `v0.1.0-pretest`), with thresholds and coefficients frozen on dev beforehand.
+>
+> **v0.2.0 in progress.** A second, independent test split (`test2`, 2,000 products drawn from the
+> former train pool, no group shared with any other split) was frozen before any v0.2.0
+> experiment; the plan, hypotheses and success criteria are pre-registered in
+> `results/v0.2.0/plan.md`. Because `test2` left train, train now has 30,375 products: the
+> v0.1.0 numbers below reproduce from tag `v0.1.0`.
 
 ## Results (test split, v0.1.0)
 

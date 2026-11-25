@@ -162,3 +162,42 @@ def test_split_keeps_the_product_type_mix():
     }
     assert not groups["dev"] & groups["test"]
     assert all(len(groups[s]) == 50 for s in out)  # one product per group
+
+
+def test_extra_test_split_is_drawn_from_train_and_frozen(tmp_path):
+    write_raw(tmp_path, n_dupes=40)
+    p = Paths(tmp_path)
+    before = build(p, seed=3, n_dev=20, n_test=20, **QUIET)
+    train_before = before["splits"]["train"]["n"]
+    dev_test = {s: (p.splits / f"{s}.txt").read_text() for s in ("dev", "test")}
+    stats = build(p, add_split="test2", extra_size=15, extra_seed=7, **QUIET)
+    frames = {
+        s: pl.read_parquet(p.processed / f"{s}.parquet") for s in ("train", "dev", "test", "test2")
+    }
+    keys = {s: set(df["group_key"]) for s, df in frames.items()}
+    for a in keys:
+        for b in keys:
+            if a < b:
+                assert not keys[a] & keys[b], (a, b)  # no group crosses splits
+    assert frames["test2"].height == 15 and frames["test2"]["group_key"].n_unique() == 15
+    assert stats["splits"]["train"]["n"] < train_before  # its groups left train
+    assert {s: (p.splits / f"{s}.txt").read_text() for s in ("dev", "test")} == dev_test
+    assert read_json(p.splits / "meta.json")["extra_splits"]["test2"]["seed"] == 7
+    frozen = (p.splits / "test2.txt").read_text()
+    build(p, **QUIET)  # later builds reuse it
+    assert (p.splits / "test2.txt").read_text() == frozen
+    with pytest.raises(RuntimeError):
+        build(p, add_split="test2", **QUIET)  # never redrawn
+    with pytest.raises(ValueError):
+        build(p, add_split="holdout", **QUIET)
+
+
+def test_split_type_mix_can_be_overridden():
+    from dmb.build import sample_grouped_splits
+
+    rows = [(f"otc-{i}", f"otc {i}", "HUMAN OTC DRUG") for i in range(300)]
+    rows += [(f"rx-{i}", f"rx {i}", "HUMAN PRESCRIPTION DRUG") for i in range(300)]
+    q = pl.DataFrame(rows, schema=["product_ndc", "group_key", "product_type"], orient="row")
+    shares = {"HUMAN OTC DRUG": 0.47, "HUMAN PRESCRIPTION DRUG": 0.53}
+    out = sample_grouped_splits(q, 100, 0, seed=1, shares=shares)["dev"]
+    assert sum(i.startswith("otc") for i in out) == 47  # global mix, not the pool's 50%

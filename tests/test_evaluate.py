@@ -155,3 +155,24 @@ def test_rules_stage5_trains_and_evaluates(built_root):
     assert m["ranking"]["accuracy@1"] >= 0.9
     assert 0.0 <= m["calibration"]["brier"] <= 1.0
     assert sum(m["bands"][x]["n"] for x in ("accept", "review", "abstain")) == 30
+
+
+def test_extra_test_split_has_its_own_once_per_matcher_guard(tmp_path):
+    from conftest import write_raw
+
+    from dmb.build import build
+
+    write_raw(tmp_path, n_dupes=40)
+    p = Paths(tmp_path)
+    build(p, seed=3, n_dev=20, n_test=20, **QUIET)
+    build(p, add_split="test2", extra_size=15, **QUIET)
+    evaluate(p, "dummy", "dev", **QUIET)
+    evaluate(p, "dummy", "test", final=True, **QUIET)
+    run = evaluate(p, "dummy", "test2", final=True, **QUIET)  # test and test2 are separate
+    assert read_json(run / "metrics.json")["n_queries"] == 15
+    with pytest.raises(FrozenSplitError):
+        evaluate(p, "dummy", "test2", final=True, **QUIET)
+    with pytest.raises(FrozenSplitError):
+        evaluate(p, "dummy", "test2", **QUIET)  # needs --final
+    with pytest.raises(ValueError):
+        evaluate(p, "dummy", "holdout", **QUIET)

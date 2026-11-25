@@ -26,6 +26,12 @@ def _parser() -> argparse.ArgumentParser:
     b.add_argument("--n-test", type=int, default=config.N_TEST)
     b.add_argument("--holdout-frac", type=float, default=config.HOLDOUT_FRAC)
     b.add_argument(
+        "--add-split",
+        metavar="NAME",
+        help="Draw and freeze an extra test split (test2, test3...) from the train pool",
+    )
+    b.add_argument("--extra-size", type=int, default=config.N_TEST)
+    b.add_argument(
         "--resample-splits",
         action="store_true",
         help="Re-sample dev/test, overwriting splits/*.txt. Refused once test.txt is committed.",
@@ -33,7 +39,7 @@ def _parser() -> argparse.ArgumentParser:
 
     e = sub.add_parser("eval", help="Evaluate a matcher on a split")
     e.add_argument("--matcher", default="dummy")
-    e.add_argument("--split", default="dev", choices=["dev", "test"])
+    e.add_argument("--split", default="dev", help="dev, test or an extra test split (test2...)")
     e.add_argument("--final", action="store_true", help="Required to evaluate the test split")
     e.add_argument("--force-rerun", action="store_true", help="Allow a second test evaluation")
     e.add_argument("--limit", type=int, help="Only the first N queries (quick checks)")
@@ -50,7 +56,7 @@ def _parser() -> argparse.ArgumentParser:
     f.add_argument("--matcher", action="append", required=True, metavar="LABEL")
 
     c = sub.add_parser("compare", help="Paired comparison of matchers on one split")
-    c.add_argument("--split", default="test", choices=["dev", "test"])
+    c.add_argument("--split", default="test")
     c.add_argument("--version", help="Check against results/<version>/freeze.json and save there")
     c.add_argument("--matcher", action="append", required=True, metavar="LABEL")
     return p
@@ -74,6 +80,8 @@ def main(argv: list[str] | None = None) -> int:
                 args.n_test,
                 args.holdout_frac,
                 resample_splits=args.resample_splits,
+                add_split=args.add_split,
+                extra_size=args.extra_size,
             )
         elif args.cmd == "eval":
             from dmb.evaluate import evaluate
