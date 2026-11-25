@@ -36,6 +36,8 @@ def test_test_split_requires_final_and_runs_once(built_root):
         evaluate(p, "dummy", "test", final=True, **QUIET)
     evaluate(p, "dummy", "test", final=True, force_rerun=True, **QUIET)
     assert len((p.reports / "test_runs.log").read_text().splitlines()) == 2
+    evaluate(p, "rules", "dev", params={"stage": "2"}, **QUIET)
+    evaluate(p, "rules", "test", final=True, params={"stage": "2"}, **QUIET)  # once per matcher
 
 
 def test_dummy_ranks_exact_name_first():

@@ -1,8 +1,9 @@
 """Run a matcher on a split and write metrics, PR curve and predictions to reports/.
 
-The test split is frozen: it can only be evaluated with --final, and only once
-(a second run needs --force-rerun and is logged). Test never picks its own thresholds: it applies
-the ones fixed on the matcher's latest full dev run, so the test numbers are not tuned to test.
+The test split is frozen: each matcher (name + params) can only be evaluated on it with --final,
+and only once (a second run of the same matcher needs --force-rerun and is logged). Test never
+picks its own thresholds: it applies the ones fixed on the matcher's latest full dev run, so the
+test numbers are not tuned to test.
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ class FrozenSplitError(PermissionError):
     pass
 
 
-def _guard_test(paths: Paths, split: str, final: bool, force_rerun: bool) -> None:
+def _guard_test(paths: Paths, split: str, final: bool, force_rerun: bool, label: str) -> None:
     if split != "test":
         return
     if not final:
@@ -43,10 +44,12 @@ def _guard_test(paths: Paths, split: str, final: bool, force_rerun: bool) -> Non
             "The test split is frozen. Evaluate it only once, at the end, with --final."
         )
     log_path = paths.reports / TEST_LOG
-    if log_path.exists() and log_path.read_text(encoding="utf-8").strip() and not force_rerun:
+    lines = log_path.read_text(encoding="utf-8").splitlines() if log_path.exists() else []
+    done = [ln for ln in lines if len(ln.split("\t")) > 1 and ln.split("\t")[1] == label]
+    if done and not force_rerun:
         raise FrozenSplitError(
-            f"Test was already evaluated (see {log_path}). Re-running needs --force-rerun, "
-            "and the extra run stays in the log."
+            f"{label} was already evaluated on test (see {log_path}). Re-running needs "
+            "--force-rerun, and the extra run stays in the log."
         )
 
 
@@ -135,9 +138,9 @@ def evaluate(
 ) -> Path:
     if split not in ("dev", "test"):
         raise ValueError("split must be 'dev' or 'test'")
-    _guard_test(paths, split, final, force_rerun)
     matcher = get_matcher(matcher_name, **(params or {}))
     label = matcher.label  # name + params, e.g. "rules-stage2"
+    _guard_test(paths, split, final, force_rerun, label)
     dev_ref = None
     if split == "test":
         dev_ref = _dev_reference(paths, label)

@@ -45,6 +45,14 @@ def _parser() -> argparse.ArgumentParser:
         metavar="KEY=VALUE",
         help="Matcher setting, e.g. --param stage=1 (repeatable)",
     )
+    f = sub.add_parser("freeze", help="Freeze dev thresholds and data hashes before test")
+    f.add_argument("--version", required=True)
+    f.add_argument("--matcher", action="append", required=True, metavar="LABEL")
+
+    c = sub.add_parser("compare", help="Paired comparison of matchers on one split")
+    c.add_argument("--split", default="test", choices=["dev", "test"])
+    c.add_argument("--version", help="Check against results/<version>/freeze.json and save there")
+    c.add_argument("--matcher", action="append", required=True, metavar="LABEL")
     return p
 
 
@@ -80,6 +88,19 @@ def main(argv: list[str] | None = None) -> int:
                 args.limit,
                 args.k,
                 params=params,
+            )
+        elif args.cmd == "freeze":
+            from dmb.compare import freeze
+
+            freeze(paths, args.version, args.matcher)
+        elif args.cmd == "compare":
+            import json
+
+            from dmb.compare import compare
+
+            report = compare(paths, args.matcher, args.split, args.version)
+            print(
+                json.dumps({"matchers": report["matchers"], "paired": report["paired"]}, indent=2)
             )
     except (OSError, RuntimeError, ValueError, NotImplementedError) as exc:
         print(f"error: {exc}", file=sys.stderr)
