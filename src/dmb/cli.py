@@ -38,6 +38,13 @@ def _parser() -> argparse.ArgumentParser:
     e.add_argument("--force-rerun", action="store_true", help="Allow a second test evaluation")
     e.add_argument("--limit", type=int, help="Only the first N queries (quick checks)")
     e.add_argument("--k", type=int, default=config.TOP_K)
+    e.add_argument(
+        "--param",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Matcher setting, e.g. --param stage=1 (repeatable)",
+    )
     return p
 
 
@@ -63,8 +70,16 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "eval":
             from dmb.evaluate import evaluate
 
+            params = dict(p.split("=", 1) for p in args.param)
             evaluate(
-                paths, args.matcher, args.split, args.final, args.force_rerun, args.limit, args.k
+                paths,
+                args.matcher,
+                args.split,
+                args.final,
+                args.force_rerun,
+                args.limit,
+                args.k,
+                params=params,
             )
     except (OSError, RuntimeError, ValueError, NotImplementedError) as exc:
         print(f"error: {exc}", file=sys.stderr)

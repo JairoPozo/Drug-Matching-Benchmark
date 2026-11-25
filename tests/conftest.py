@@ -92,6 +92,7 @@ def write_raw(root: Path, n_products: int = 120, n_dupes: int = 0) -> dict:
         lines.append(conso_line(c["scd"], "SCD", c["name"]))
         lines.append(conso_line(c["sbd"], "SBD", f"{c['name']} [Brand]"))
     lines.append(conso_line("9", "IN", "acetaminophen"))
+    lines.append(conso_line("317541", "DF", "Oral Tablet"))
     lines.append(conso_line("8888", "SCD", "obsolete 1 MG Oral Tablet", suppress="O"))
     lines.append(conso_line("7777", "SCD", "other source 1 MG Oral Tablet", sab="MTHSPL"))
     paths.rrf_dir.mkdir(parents=True)

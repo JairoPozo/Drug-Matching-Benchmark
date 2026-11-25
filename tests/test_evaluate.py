@@ -48,11 +48,21 @@ def test_dummy_ranks_exact_name_first():
     assert all(0.0 <= s <= 1.0 for _, s in cands)
 
 
-def test_unknown_and_unimplemented_matchers(built_root):
+def test_unknown_matcher_and_bad_params():
     with pytest.raises(ValueError):
         get_matcher("nope")
-    with pytest.raises(NotImplementedError):
-        evaluate(Paths(built_root), "rules", "dev", **QUIET)
+    with pytest.raises(ValueError):
+        get_matcher("rules", stage=9)
+    with pytest.raises(ValueError):
+        get_matcher("dummy", stage=1)
+
+
+def test_rules_end_to_end_on_dev(built_root):
+    run_dir = evaluate(Paths(built_root), "rules", "dev", params={"stage": "2"}, **QUIET)
+    m = read_json(run_dir / "metrics.json")
+    assert run_dir.name.endswith("_rules-stage2_dev")
+    assert m["matcher"] == "rules-stage2" and m["params"] == {"stage": 2}
+    assert m["ranking"]["accuracy@1"] >= 0.9  # synthetic names are unambiguous
 
 
 def test_test_requires_a_dev_run_and_uses_its_thresholds(built_root):

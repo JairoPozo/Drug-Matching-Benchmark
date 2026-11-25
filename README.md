@@ -81,6 +81,21 @@ and writes `data/raw/manifest.json` with each source's version, URL and sha256.
   (0 = kits that declare no ingredient, 1, 2+), route (oral, topical, ophthalmic, nasal, dental,
   injectable, ...), in catalog vs. not in catalog (NIL), prescription vs. OTC.
 
+## Baselines on dev (work in progress)
+
+Numbers on the 2,000 dev queries (185 not in the catalog). Test has not been evaluated yet.
+False accepts and calibration are at the best-F1 threshold.
+
+| Matcher | accuracy@1 | recall@5 | false accept rate | calibration (ECE) |
+|---|---|---|---|---|
+| `dummy`: fuzzy text similarity | 0.557 | 0.776 | 0.432 | 0.422 |
+| `rules --param stage=1`: same ingredients only | 0.619 | 0.811 | 0.392 | 0.335 |
+| `rules --param stage=2`: + strengths compared as numbers | 0.764 | 0.900 | 0.214 | 0.186 |
+
+No matcher reaches 95% precision yet. The rule stages come from a manual review of 40 dev
+cases: next are dose form compatibility, the basis of strength (salt vs. moiety, e.g. sodium
+fluoride vs. fluoride ion) and a calibrated score.
+
 ## Rules of the benchmark
 
 - Data is never committed: `make data` downloads it and records versions + checksums.
@@ -93,10 +108,13 @@ and writes `data/raw/manifest.json` with each source's version, URL and sha256.
   test results.
 - **Allowed resources for a matcher**: the query text and the catalog, plus RxNorm's own names,
   synonyms and attributes (`RXNCONSO`, `RXNREL`, `RXNSAT`, e.g. ingredient synonyms or the basis
-  of strength). **Not allowed**: NDC codes stored in RxNorm (`RXNSAT` NDC attributes), any
-  `openfda.*` field, and any external source that maps a product to its RxCUI (e.g. DailyMed or
-  RxNav lookups). Each of them gives the answer away. Tools given to an LLM agent follow the same
-  rule.
+  of strength). **Not allowed**: NDC codes and other product-level attributes stored in RxNorm
+  (`RXNSAT` NDC, LABELER, SPL_SET_ID, ...), MTHSPL product names (`DP`, `MTH_RXN_DP` in
+  `RXNCONSO`), any `openfda.*` field, RxNorm data about clinical drugs that are not in the catalog
+  the matcher receives (the held-out concepts stand for products missing from the catalog), and
+  any external source that maps a product to its RxCUI (e.g. DailyMed or RxNav lookups). Each of
+  them gives the answer away. Tools given to an LLM agent follow the same rule.
+  `dmb/rxvocab.py` is the one place that reads RxNorm for the rules, and documents what it reads.
 - Kits that declare no active ingredient stay in the benchmark and are reported as their own
   subgroup: text rules cannot solve them, so they show where outside knowledge helps.
 - Exploration happens in notebooks (`make notebook`); official numbers come from `dmb eval`.

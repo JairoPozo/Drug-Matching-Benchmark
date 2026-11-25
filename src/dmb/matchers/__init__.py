@@ -5,11 +5,13 @@ from dmb.matchers.rules import RulesMatcher
 MATCHERS: dict[str, type[Matcher]] = {m.name: m for m in (DummyMatcher, RulesMatcher)}
 
 
-def get_matcher(name: str) -> Matcher:
+def get_matcher(name: str, **params) -> Matcher:
+    if name not in MATCHERS:
+        raise ValueError(f"Unknown matcher {name!r}. Available: {sorted(MATCHERS)}")
     try:
-        return MATCHERS[name]()
-    except KeyError:
-        raise ValueError(f"Unknown matcher {name!r}. Available: {sorted(MATCHERS)}") from None
+        return MATCHERS[name](**params)
+    except TypeError as exc:
+        raise ValueError(f"Bad parameters for matcher {name!r}: {exc}") from None
 
 
 __all__ = ["MATCHERS", "Candidates", "Matcher", "get_matcher"]

@@ -128,14 +128,17 @@ def evaluate(
     limit: int | None = None,
     k: int = TOP_K,
     target_precision: float = TARGET_PRECISION,
+    params: dict | None = None,
     log=print,
 ) -> Path:
     if split not in ("dev", "test"):
         raise ValueError("split must be 'dev' or 'test'")
     _guard_test(paths, split, final, force_rerun)
+    matcher = get_matcher(matcher_name, **(params or {}))
+    label = matcher.label  # name + params, e.g. "rules-stage2"
     dev_ref = None
     if split == "test":
-        dev_ref = _dev_reference(paths, matcher_name)
+        dev_ref = _dev_reference(paths, label)
         if dev_ref is None:
             raise FrozenSplitError(
                 "Test applies the thresholds fixed on dev. Run a full dev evaluation of this "
@@ -150,11 +153,8 @@ def evaluate(
         df = df.head(limit)
     catalog = pl.read_parquet(paths.processed / "catalog.parquet")
 
-    matcher = get_matcher(matcher_name)
-    log(
-        f"[eval] matcher={matcher_name} split={split} queries={df.height:,} "
-        f"catalog={catalog.height:,}"
-    )
+    matcher.paths = paths
+    log(f"[eval] matcher={label} split={split} queries={df.height:,} catalog={catalog.height:,}")
     t0 = time.perf_counter()
     matcher.fit(catalog)
     t_fit = time.perf_counter() - t0
@@ -180,11 +180,12 @@ def evaluate(
     subgroups = subgroup_metrics(subgroup_labels(df), expected, candidates, t_op)
 
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-    run_dir = paths.reports / f"{stamp}_{matcher_name}_{split}"
+    run_dir = paths.reports / f"{stamp}_{label}_{split}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
     metrics = {
-        "matcher": matcher_name,
+        "matcher": label,
+        "params": matcher.params,
         "split": split,
         "final": final,
         "limit": limit,
@@ -220,11 +221,11 @@ def evaluate(
             "precision": at_target["accept_precision"],
             "recall": at_target["accept_recall"],
         }
-    _plot_pr(curve, mark, run_dir / "pr_curve.png", f"{matcher_name} on {split}")
+    _plot_pr(curve, mark, run_dir / "pr_curve.png", f"{label} on {split}")
 
     if split == "test":
         with (paths.reports / TEST_LOG).open("a", encoding="utf-8") as f:
-            f.write(f"{metrics['created_at']}\t{matcher_name}\t{run_dir.name}\n")
+            f.write(f"{metrics['created_at']}\t{label}\t{run_dir.name}\n")
 
     _print_summary(metrics, run_dir, log)
     if matcher_name == "dummy" and (ranking.get("accuracy@1") or 0) > 0.9:
