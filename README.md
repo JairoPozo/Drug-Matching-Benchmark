@@ -91,13 +91,15 @@ False accepts and calibration are at the best-F1 threshold.
 | `dummy`: fuzzy text similarity | 0.557 | 0.776 | 0.432 | 0.422 |
 | `rules --param stage=1`: same ingredients only | 0.619 | 0.811 | 0.392 | 0.335 |
 | `rules --param stage=2`: + strengths compared as numbers | 0.764 | 0.900 | 0.214 | 0.186 |
-| `rules --param stage=3`: + dose form compatibility learned from train | **0.850** | **0.934** | 0.157 | **0.088** |
+| `rules --param stage=3`: + dose form compatibility learned from train | 0.850 | 0.934 | 0.157 | 0.088 |
+| `rules --param stage=4`: + strength conversions learned from train (salt/moiety, mg/mEq, per actuation) | **0.861** | **0.935** | **0.096** | **0.087** |
 
 Stage 3 is the first to reach **95% precision**: at that threshold it accepts 51% of the dev
 queries automatically (false accept rate 5%) and abstains on 93.5% of the products that are not
-in the catalog. The rule stages come from a manual review of 40 dev cases. Next: the basis of
-strength (salt vs. moiety, e.g. sodium fluoride vs. fluoride ion; per-actuation sprays), then a
-calibrated score to accept more queries at the same precision.
+in the catalog. Stage 4 raises the best-F1 point to 90% precision and detects 78% of the
+products that are not in the catalog (31% in stage 3). The rule stages come from a manual review
+of 40 dev cases. Next: a calibrated score, to accept more than 51% of the queries at 95%
+precision.
 
 ## Rules of the benchmark
 

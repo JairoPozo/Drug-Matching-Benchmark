@@ -93,3 +93,41 @@ def parse_rxnorm_strength(text: str) -> Strength | None:
     if not m:
         return None
     return canonical(float(m.group("num")), m.group("unit"), None, m.group("dunit"))
+
+
+# ---- conversion factors (stage 4) ------------------------------------------------------------
+# A product can declare a strength in a different basis than RxNorm: a salt vs. its moiety
+# (copper vs. cupric chloride), mg vs. mEq (potassium chloride), mg/mL vs. mg per actuation
+# (nasal sprays), mass vs. volume (density). For a given ingredient the factor between the two is
+# fixed chemistry, so it can be learned from train pairs and used only when it is stable.
+
+ConversionKey = tuple[
+    str, str, str, str, str
+]  # (ingredient, NDC num, NDC den, RxNorm num, RxNorm den)
+MIN_OBSERVATIONS = 3
+MIN_AGREEMENT = 0.7  # share of observations within REL_TOL of the median factor
+
+
+def learn_factors(observations: dict[ConversionKey, list[float]]) -> dict[ConversionKey, float]:
+    """Median factor RxNorm value / NDC value per key, kept only when the observations agree."""
+    out = {}
+    for key, ratios in observations.items():
+        if len(ratios) < MIN_OBSERVATIONS:
+            continue
+        ratios = sorted(ratios)
+        median = ratios[len(ratios) // 2]
+        agree = sum(abs(r / median - 1) <= REL_TOL for r in ratios) / len(ratios)
+        if agree >= MIN_AGREEMENT:
+            out[key] = median
+    return out
+
+
+def converted_match(
+    ingredient: str, ndc: Strength, rxn: Strength, factors: dict[ConversionKey, float]
+) -> bool:
+    """True when the NDC strength equals the RxNorm one after a known conversion."""
+    if ndc.num_kind == rxn.num_kind and {ndc.den_kind, rxn.den_kind} == {"each", "actuat"}:
+        # Sprays and inhalers: NDC declares the amount "per 1" actuation.
+        return Strength(ndc.value, rxn.num_kind, rxn.den_kind).matches(rxn)
+    f = factors.get((ingredient, ndc.num_kind, ndc.den_kind, rxn.num_kind, rxn.den_kind))
+    return f is not None and Strength(ndc.value * f, rxn.num_kind, rxn.den_kind).matches(rxn)

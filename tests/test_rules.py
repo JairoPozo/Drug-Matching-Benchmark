@@ -153,7 +153,7 @@ def test_rules_block_by_ingredient_and_compare_strengths():
 
 def test_rules_stages_and_labels():
     assert RulesMatcher(stage="1").label == "rules-stage1"
-    assert get_matcher("rules").label == "rules-stage3"  # default: latest stage
+    assert get_matcher("rules").label == "rules-stage4"  # default: latest stage
     with pytest.raises(ValueError):
         RulesMatcher(stage=7)
 
@@ -232,3 +232,56 @@ def test_rules_stage3_drops_incompatible_forms():
         "10",
         "11",
     }
+
+
+def test_learn_factors_keeps_only_stable_ones():
+    from dmb.strength import learn_factors
+
+    kcl = ("IN_K", "mass", "each", "meq", "each")  # potassium chloride: 1500 mg = 20 mEq
+    noisy = ("IN_F", "mass", "mlq", "mass", "mlq")
+    factors = learn_factors(
+        {
+            kcl: [20 / 1500, 10 / 750, 8 / 600, 20 / 1500],
+            noisy: [1.6, 2.2, 1.8, 2.5],  # train disagrees: no factor
+            ("IN_X", "mass", "each", "meq", "each"): [0.5, 0.5],  # too few observations
+        }
+    )
+    assert set(factors) == {kcl}
+    assert abs(factors[kcl] - 20 / 1500) < 1e-9
+
+
+def test_converted_match():
+    from dmb.strength import Strength, converted_match
+
+    factors = {("IN_K", "mass", "each", "meq", "each"): 20 / 1500}
+    ndc = Strength(1500.0, "mass", "each")
+    assert converted_match("IN_K", ndc, Strength(20.0, "meq", "each"), factors)
+    assert not converted_match("IN_K", ndc, Strength(10.0, "meq", "each"), factors)
+    assert not converted_match("IN_OTHER", ndc, Strength(20.0, "meq", "each"), factors)
+    # per actuation: NDC declares sprays "per 1"
+    spray = Strength(0.2055, "mass", "each")
+    assert converted_match("IN_A", spray, Strength(0.206, "mass", "actuat"), {})
+
+
+def test_rules_stage4_prefers_direct_over_converted():
+    vocab = Vocab(
+        name_to_in={"potassium chloride": frozenset({"IN_K"})},
+        dose_forms=["Extended Release Oral Tablet"],
+    )
+    catalog = pl.DataFrame(
+        {
+            "rxcui": ["20", "21"],
+            "name": [
+                "potassium chloride 20 MEQ Extended Release Oral Tablet",
+                "potassium chloride 10 MEQ Extended Release Oral Tablet",
+            ],
+        }
+    )
+    factors = {("IN_K", "mass", "each", "meq", "each"): 20 / 1500}
+    q = "K-Tab POTASSIUM CHLORIDE 1500 mg/1 TABLET, EXTENDED RELEASE ORAL 100 TABLET in 1 BOTTLE"
+    m3, m4 = RulesMatcher(stage=3), RulesMatcher(stage=4)
+    m3.fit(catalog, vocab=vocab, form_model=_form_model())
+    m4.fit(catalog, vocab=vocab, form_model=_form_model(), factors=factors)
+    c3, c4 = m3.match(q), m4.match(q)
+    assert c4[0][0] == "20" and c4[0][1] > c3[0][1]  # mg -> mEq conversion found the 20 mEq tablet
+    assert c4[0][1] > c4[1][1]
