@@ -19,7 +19,9 @@ from dmb.matchers import get_matcher
 from dmb.metrics import (
     best_f1,
     calibration,
+    decision_bands,
     decision_metrics,
+    pick_abstain_threshold,
     pick_threshold,
     pr_curve,
     ranking_metrics,
@@ -177,6 +179,11 @@ def evaluate(
     at_best_f1 = decision_metrics(expected, candidates, t_f1) if t_f1 is not None else None
     op_name, t_op = ("target_precision", t_target) if t_target is not None else ("best_f1", t_f1)
     calib = calibration(expected, candidates)
+    if dev_ref:  # test: the abstain threshold also comes from dev
+        t_abstain = (dev_ref[0].get("bands") or {}).get("t_abstain")
+    else:
+        t_abstain = pick_abstain_threshold(expected, candidates, k=k)
+    bands = decision_bands(expected, candidates, t_op, t_abstain, k=k) if t_op is not None else None
     subgroups = subgroup_metrics(subgroup_labels(df), expected, candidates, t_op)
 
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
@@ -201,6 +208,8 @@ def evaluate(
         "at_target_precision": at_target,
         "at_best_f1": at_best_f1,
         "calibration": calib,
+        "bands": bands,
+        "training": getattr(matcher, "training_summary", None) or None,
         "subgroups": {"operating_point": op_name, "threshold": t_op, "groups": subgroups},
         "timing_seconds": {
             "fit": round(t_fit, 3),
@@ -318,7 +327,20 @@ def _print_summary(m: dict, run_dir: Path, log) -> None:
             f"missed {c['missed']}, correct abstain {c['correct_abstain']} | "
             f"false accept rate {_fmt(op['false_accept_rate'])}, coverage {_fmt(op['coverage'])}"
         )
-    log(f"calibration ECE       {_fmt(m['calibration']['ece'])} (0 = score is a probability)")
+    cal = m["calibration"]
+    log(
+        f"calibration ECE       {_fmt(cal['ece'])}  Brier {_fmt(cal['brier'])} "
+        "(0 = score is a probability)"
+    )
+    b = m["bands"]
+    if b:
+        a, r, x = b["accept"], b["review"], b["abstain"]
+        top_key = next(key for key in r if key.startswith("answer_in_top"))
+        log(
+            f"bands: accept {a['n']} ({_fmt(a['share'])}) precision {_fmt(a['precision'])} | "
+            f"review {r['n']} ({_fmt(r['share'])}) answer in top5 {_fmt(r[top_key])} | "
+            f"abstain {x['n']} ({_fmt(x['share'])}) nothing to pick {_fmt(x['useless_share'])}"
+        )
     log(f"thresholds from       {m['thresholds_from']}")
     sg = m["subgroups"]
     log(f"subgroups at {sg['operating_point']} threshold: n | acc@1 | end-to-end | false accept")

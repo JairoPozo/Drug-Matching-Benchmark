@@ -75,8 +75,11 @@ and writes `data/raw/manifest.json` with each source's version, URL and sha256.
 - **Abstention** (NIL detection): precision and recall of abstaining on held-out concepts.
 - **Precision-recall curve** over all thresholds; the reported operating point is the highest
   recall with precision ≥ 95% (automatic matching), plus the best-F1 point.
-- **Calibration**: precision of the top-1 answer per score bin and the expected calibration error
-  (ECE). It says whether a score of 0.8 really means "right 80% of the time".
+- **Calibration**: precision of the top-1 answer per score bin, the expected calibration error
+  (ECE) and the Brier score. They say whether a score of 0.8 really means "right 80% of the time".
+- **Decision bands**: accept (score ≥ the 95%-precision threshold), review (a person picks from
+  the top 5) and abstain (score below the highest threshold under which ≥ 90% of the queries have
+  no right answer in their top 5). Reported with each band's size and what it delivers.
 - **Subgroups**, reported separately at the operating threshold: number of ingredients
   (0 = kits that declare no ingredient, 1, 2+), route (oral, topical, ophthalmic, nasal, dental,
   injectable, ...), in catalog vs. not in catalog (NIL), prescription vs. OTC.
@@ -84,22 +87,31 @@ and writes `data/raw/manifest.json` with each source's version, URL and sha256.
 ## Baselines on dev (work in progress)
 
 Numbers on the 2,000 dev queries (185 not in the catalog). Test has not been evaluated yet.
-False accepts and calibration are at the best-F1 threshold.
+Coverage is the share of queries accepted automatically at ≥ 95% precision.
 
-| Matcher | accuracy@1 | recall@5 | false accept rate | calibration (ECE) |
-|---|---|---|---|---|
-| `dummy`: fuzzy text similarity | 0.557 | 0.776 | 0.432 | 0.422 |
-| `rules --param stage=1`: same ingredients only | 0.619 | 0.811 | 0.392 | 0.335 |
-| `rules --param stage=2`: + strengths compared as numbers | 0.764 | 0.900 | 0.214 | 0.186 |
-| `rules --param stage=3`: + dose form compatibility learned from train | 0.850 | 0.934 | 0.157 | 0.088 |
-| `rules --param stage=4`: + strength conversions learned from train (salt/moiety, mg/mEq, per actuation) | **0.861** | **0.935** | **0.096** | **0.087** |
+| Matcher | accuracy@1 | recall@5 | coverage at 95% precision | ECE | Brier |
+|---|---|---|---|---|---|
+| `dummy`: fuzzy text similarity | 0.557 | 0.776 | — (never reaches 95%) | 0.422 | |
+| `rules --param stage=1`: same ingredients only | 0.619 | 0.811 | — | 0.335 | |
+| `rules --param stage=2`: + strengths compared as numbers | 0.764 | 0.900 | — | 0.186 | |
+| `rules --param stage=3`: + dose form compatibility learned from train | 0.850 | 0.934 | 0.510 | 0.088 | |
+| `rules --param stage=4`: + strength conversions learned from train | 0.861 | 0.935 | 0.510 | 0.087 | 0.115 |
+| `rules --param stage=5`: same candidates, logistic regression score | **0.862** | **0.939** | **0.683** | **0.029** | **0.090** |
 
-Stage 3 is the first to reach **95% precision**: at that threshold it accepts 51% of the dev
-queries automatically (false accept rate 5%) and abstains on 93.5% of the products that are not
-in the catalog. Stage 4 raises the best-F1 point to 90% precision and detects 78% of the
-products that are not in the catalog (31% in stage 3). The rule stages come from a manual review
-of 40 dev cases. Next: a calibrated score, to accept more than 51% of the queries at 95%
-precision.
+- Stages 1–4 come from a manual review of 40 dev cases. Each stage is a filter or a feature a
+  pharmacist would check: same ingredients, same strength, compatible dose form, strength basis.
+- Stage 5 keeps stage 4's candidates and only changes the score: a logistic regression trained
+  on train turns the features into a probability. At the same 95% precision it accepts 68% of
+  the queries instead of 51%, and its probabilities are calibrated (ECE 0.029: a score of 0.86
+  is right about 86% of the time). It is **cross-fitted** (5 folds by group, so no train row sees
+  its own label in its features), trained on all candidates with no resampling (the class
+  imbalance is the real one), and hides the right concept in 10% of the rows so it learns what
+  "not in the catalog" looks like. Text similarity gets almost no weight once the rules are in
+  place; the margin over the runner-up and the dose form likelihood get the most. Training takes
+  about two minutes.
+- **Decision bands** (stage 5 on dev): accept 68.3% (precision 95.2%), send 24.8% to review
+  (the right answer is in the top 5 for 95.1% of them), abstain on 6.9% (none of them has a
+  right answer to pick). Both thresholds are fixed on dev and reused on test.
 
 ## Rules of the benchmark
 

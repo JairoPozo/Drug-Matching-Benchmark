@@ -15,8 +15,13 @@ Conventions
     correct_abstain  abstained and the right concept is not in the catalog
   false_accept_rate = (wrong_accept + accept_on_nil) / accepts; coverage = accepts / queries.
 - Calibration: top-1 scores are binned; in each bin precision should equal the mean score.
-  ECE (expected calibration error) is the size-weighted gap. A score is only a probability if
-  ECE is close to 0.
+  ECE (expected calibration error) is the size-weighted gap. Brier score = mean squared error
+  between the top-1 score and 1 (right) / 0 (wrong). A score is only a probability if both are
+  close to 0.
+- Decision bands: accept the top-1 if score >= t_accept; abstain if score < t_abstain (or no
+  candidate); otherwise send the query to review, where a person picks from the top k.
+  t_abstain is the highest threshold below which at least MIN_USELESS of the queries have no
+  right answer in their top k (nothing a reviewer could pick).
 """
 
 from __future__ import annotations
@@ -153,6 +158,11 @@ def calibration(
         b[1] += s
         b[2] += e is not None and top == e
     total = sum(b[0] for b in bins)
+    brier = sum(
+        (min(max(_top1(c)[1], 0.0), 1.0) - (e is not None and _top1(c)[0] == e)) ** 2
+        for e, c in zip(expected, candidates, strict=True)
+        if c
+    )
     rows, ece = [], 0.0
     for i, (n, ssum, correct) in enumerate(bins):
         if not n:
@@ -167,7 +177,11 @@ def calibration(
                 "precision": prec,
             }
         )
-    return {"ece": ece if total else None, "bins": rows}
+    return {
+        "ece": ece if total else None,
+        "brier": brier / total if total else None,
+        "bins": rows,
+    }
 
 
 def subgroup_metrics(
@@ -194,3 +208,80 @@ def subgroup_metrics(
                 "coverage": d["coverage"] if d else None,
             }
     return out
+
+
+MIN_USELESS = 0.9
+
+
+def _in_top(e: str | None, c: Candidates, k: int) -> bool:
+    return e is not None and e in [r for r, _ in c[:k]]
+
+
+def pick_abstain_threshold(
+    expected: Sequence[str | None],
+    candidates: Sequence[Candidates],
+    k: int = 5,
+    min_useless: float = MIN_USELESS,
+) -> float | None:
+    """Highest t such that, among queries scored below t, >= min_useless have nothing right in
+    their top k. None when no such t exists (abstain only when there is no candidate)."""
+    rows = sorted(
+        (_top1(c)[1], not _in_top(e, c, k)) for e, c in zip(expected, candidates, strict=True) if c
+    )
+    best, n, useless, i = None, 0, 0, 0
+    while i < len(rows):
+        score = rows[i][0]
+        while i < len(rows) and rows[i][0] == score:
+            n += 1
+            useless += rows[i][1]
+            i += 1
+        if i < len(rows) and useless / n >= min_useless:
+            best = rows[i][0]  # abstain on everything scored below the next distinct score
+    return best
+
+
+def decision_bands(
+    expected: Sequence[str | None],
+    candidates: Sequence[Candidates],
+    t_accept: float,
+    t_abstain: float | None,
+    k: int = 5,
+) -> dict:
+    """Accept / review / abstain, with what each band delivers."""
+    t_abstain = min(t_abstain, t_accept) if t_abstain is not None else None
+    bands: dict[str, list] = {"accept": [], "review": [], "abstain": []}
+    for e, c in zip(expected, candidates, strict=True):
+        top, score = _top1(c)
+        if top is not None and score >= t_accept:
+            bands["accept"].append((e, c))
+        elif top is None or (t_abstain is not None and score < t_abstain):
+            bands["abstain"].append((e, c))
+        else:
+            bands["review"].append((e, c))
+    n = len(expected)
+    acc, rev, abst = bands["accept"], bands["review"], bands["abstain"]
+    rev_ans = [(e, c) for e, c in rev if e is not None]
+    return {
+        "t_accept": t_accept,
+        "t_abstain": t_abstain,
+        "accept": {
+            "n": len(acc),
+            "share": _safe_div(len(acc), n),
+            "precision": _safe_div(
+                sum(_top1(c)[0] == e for e, c in acc if e is not None), len(acc)
+            ),
+        },
+        "review": {
+            "n": len(rev),
+            "share": _safe_div(len(rev), n),
+            "n_nil": len(rev) - len(rev_ans),
+            "top1_precision": _safe_div(sum(_top1(c)[0] == e for e, c in rev_ans), len(rev)),
+            f"answer_in_top{k}": _safe_div(sum(_in_top(e, c, k) for e, c in rev_ans), len(rev_ans)),
+        },
+        "abstain": {
+            "n": len(abst),
+            "share": _safe_div(len(abst), n),
+            "n_nil": sum(e is None for e, _ in abst),
+            "useless_share": _safe_div(sum(not _in_top(e, c, k) for e, c in abst), len(abst)),
+        },
+    }

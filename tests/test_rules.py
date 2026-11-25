@@ -153,7 +153,7 @@ def test_rules_block_by_ingredient_and_compare_strengths():
 
 def test_rules_stages_and_labels():
     assert RulesMatcher(stage="1").label == "rules-stage1"
-    assert get_matcher("rules").label == "rules-stage4"  # default: latest stage
+    assert get_matcher("rules").label == "rules-stage5"  # default: latest stage
     with pytest.raises(ValueError):
         RulesMatcher(stage=7)
 
@@ -285,3 +285,13 @@ def test_rules_stage4_prefers_direct_over_converted():
     c3, c4 = m3.match(q), m4.match(q)
     assert c4[0][0] == "20" and c4[0][1] > c3[0][1]  # mg -> mEq conversion found the 20 mEq tablet
     assert c4[0][1] > c4[1][1]
+
+
+def test_hidden_concept_simulates_not_in_catalog():
+    m = _matcher(stage=2)
+    q = "Citalopram CITALOPRAM HYDROBROMIDE 10 mg/5mL SOLUTION ORAL 240 mL in 1 BOTTLE X"
+    assert "1" in [r for r, _ in m._candidate_features(q)]
+    assert "1" not in [r for r, _ in m._candidate_features(q, hidden="1")]
+    feats = dict(m._candidate_features(q))
+    assert feats["1"]["is_top"] == 1.0 and feats["1"]["heuristic_gap"] > 0
+    assert feats["2"]["is_top"] == 0.0 and feats["2"]["heuristic_gap"] < 0

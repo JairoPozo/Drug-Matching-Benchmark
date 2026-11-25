@@ -116,3 +116,40 @@ def test_route_groups():
     assert _route_group("INTRAVENOUS, INTRAMUSCULAR") == "injectable"
     assert _route_group("ORAL, TOPICAL") == "multiple"
     assert _route_group("") == "unknown" and _route_group(None) == "unknown"
+
+
+def test_brier_and_decision_bands():
+    from dmb.metrics import calibration, decision_bands, pick_abstain_threshold
+
+    assert calibration(["a"], [[("a", 1.0)]])["brier"] == 0.0
+    assert calibration(["a", "a"], [[("x", 0.95)], [("y", 0.95)]])["brier"] > 0.8
+
+    expected = ["a", "b", "c", None, None, "d"]
+    candidates = [
+        [("a", 0.97)],  # accept, right
+        [("x", 0.6), ("b", 0.3)],  # review: right answer is 2nd
+        [("c", 0.5)],  # review, right on top
+        [("y", 0.04)],  # low score, nothing right: abstain
+        [("z", 0.02)],  # low score, nothing right: abstain
+        [],  # no candidate: abstain
+    ]
+    t_abstain = pick_abstain_threshold(expected, candidates, k=5, min_useless=0.9)
+    assert t_abstain == 0.5  # below 0.5 every query has nothing right in its top 5
+    b = decision_bands(expected, candidates, t_accept=0.9, t_abstain=t_abstain)
+    assert (b["accept"]["n"], b["review"]["n"], b["abstain"]["n"]) == (1, 2, 3)
+    assert b["accept"]["precision"] == 1.0
+    assert b["review"]["answer_in_top5"] == 1.0 and b["review"]["top1_precision"] == 0.5
+    assert b["abstain"]["useless_share"] == 1.0 and b["abstain"]["n_nil"] == 2
+
+
+def test_rules_stage5_trains_and_evaluates(built_root):
+    from dmb.matchers.rules import FEATURES
+
+    run_dir = evaluate(Paths(built_root), "rules", "dev", params={"stage": "5"}, **QUIET)
+    m = read_json(run_dir / "metrics.json")
+    assert m["matcher"] == "rules-stage5"
+    assert set(m["training"]["coefficients"]) == set(FEATURES)
+    assert m["training"]["positives"] > 0 and m["training"]["folds"] == 5
+    assert m["ranking"]["accuracy@1"] >= 0.9
+    assert 0.0 <= m["calibration"]["brier"] <= 1.0
+    assert sum(m["bands"][x]["n"] for x in ("accept", "review", "abstain")) == 30
