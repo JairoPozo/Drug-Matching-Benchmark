@@ -17,12 +17,20 @@ def test_dummy_end_to_end_on_dev(built_root):
     assert "abstain_recall" in m["at_best_f1"]
     for f in ("pr_curve.csv", "pr_curve.png", "predictions.parquet"):
         assert (run_dir / f).exists()
+    assert m["thresholds_from"] == "this split"
+    assert 0.0 <= m["calibration"]["ece"] <= 1.0
+    groups = m["subgroups"]["groups"]
+    assert set(groups) == {"ingredients", "route", "catalog", "product_type"}
+    assert sum(r["n"] for r in groups["route"].values()) == 30
+    counts = m["at_best_f1"]["counts"]
+    assert sum(counts.values()) == 30
 
 
 def test_test_split_requires_final_and_runs_once(built_root):
     p = Paths(built_root)
     with pytest.raises(FrozenSplitError):
         evaluate(p, "dummy", "test", **QUIET)
+    evaluate(p, "dummy", "dev", **QUIET)  # test needs thresholds fixed on dev
     evaluate(p, "dummy", "test", final=True, **QUIET)
     with pytest.raises(FrozenSplitError):
         evaluate(p, "dummy", "test", final=True, **QUIET)
@@ -45,3 +53,56 @@ def test_unknown_and_unimplemented_matchers(built_root):
         get_matcher("nope")
     with pytest.raises(NotImplementedError):
         evaluate(Paths(built_root), "rules", "dev", **QUIET)
+
+
+def test_test_requires_a_dev_run_and_uses_its_thresholds(built_root):
+    p = Paths(built_root)
+    with pytest.raises(FrozenSplitError, match="dev"):
+        evaluate(p, "dummy", "test", final=True, **QUIET)
+    evaluate(p, "dummy", "dev", limit=5, **QUIET)  # partial runs do not count
+    with pytest.raises(FrozenSplitError, match="dev"):
+        evaluate(p, "dummy", "test", final=True, **QUIET)
+    dev = read_json(evaluate(p, "dummy", "dev", **QUIET) / "metrics.json")
+    test = read_json(evaluate(p, "dummy", "test", final=True, **QUIET) / "metrics.json")
+    assert test["thresholds_from"].endswith("_dummy_dev")
+    assert test["at_best_f1"]["threshold"] == dev["at_best_f1"]["threshold"]
+
+
+def test_decision_counts_and_calibration():
+    from dmb.metrics import calibration, decision_metrics, subgroup_metrics
+
+    expected = ["a", "b", None, "c", None]
+    candidates = [
+        [("a", 0.9)],  # correct accept
+        [("x", 0.9)],  # wrong accept
+        [("y", 0.9)],  # accepted although NIL
+        [("c", 0.1)],  # missed (below threshold)
+        [("z", 0.1)],  # correct abstain
+    ]
+    d = decision_metrics(expected, candidates, 0.5)
+    assert d["counts"] == {
+        "correct_accept": 1,
+        "wrong_accept": 1,
+        "accept_on_nil": 1,
+        "missed": 1,
+        "correct_abstain": 1,
+    }
+    assert d["false_accept_rate"] == 2 / 3 and d["coverage"] == 3 / 5
+    assert d["end_to_end_accuracy"] == 2 / 5
+
+    perfect = calibration(["a", "a"], [[("a", 1.0)], [("b", 0.0)]])
+    assert perfect["ece"] == 0.0
+    overconfident = calibration(["a", "a"], [[("x", 0.95)], [("y", 0.95)]])
+    assert overconfident["ece"] > 0.9
+
+    sub = subgroup_metrics({"g": ["u", "u", "v", "v", "v"]}, expected, candidates, 0.5)
+    assert sub["g"]["u"]["n"] == 2 and sub["g"]["v"]["n_nil"] == 2
+
+
+def test_route_groups():
+    from dmb.evaluate import _route_group
+
+    assert _route_group("OPHTHALMIC") == "ophthalmic"
+    assert _route_group("INTRAVENOUS, INTRAMUSCULAR") == "injectable"
+    assert _route_group("ORAL, TOPICAL") == "multiple"
+    assert _route_group("") == "unknown" and _route_group(None) == "unknown"

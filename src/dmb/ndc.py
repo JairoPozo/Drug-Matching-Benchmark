@@ -17,8 +17,16 @@ from pathlib import Path
 
 import polars as pl
 
-# Fields allowed in the query text (v0.2). Week 2 of the plan fixes the final format.
-QUERY_FIELDS = ("brand_name", "active_ingredients", "dosage_form", "packaging", "labeler_name")
+# Fields that feed the query text (format v0.3), in this order. Frozen before the test split is
+# evaluated: changing it after seeing test results would tune the benchmark to its answers.
+QUERY_FIELDS = (
+    "brand_name",
+    "active_ingredients",
+    "dosage_form",
+    "route",
+    "packaging",
+    "labeler_name",
+)
 
 # Package NDC codes in parentheses, e.g. "(0363-7470-04)". A real catalog (e.g. a Chilean one)
 # would not carry them, and a trained model could use them as a shortcut, so v0.2 drops them.
@@ -53,9 +61,10 @@ def strip_package_ndc(text: str) -> str:
 
 
 def build_query_text(rec: dict) -> str:
-    """Catalog-style line: {brand} {ingredients+strength} {dosage form} {package} {labeler}.
+    """Catalog-style line: {brand} {ingredients+strength} {dosage form} {route} {package} {labeler}.
 
-    The package description is kept without its NDC code (query format v0.2).
+    The package description is kept without its NDC code (v0.2). The route of administration
+    (e.g. OPHTHALMIC, NASAL) is declared by the labeler and is not derived from RxNorm (v0.3).
     """
     packaging = rec.get("packaging") or []
     package = strip_package_ndc(packaging[0].get("description")) if packaging else ""
@@ -63,6 +72,7 @@ def build_query_text(rec: dict) -> str:
         _clean(rec.get("brand_name")),
         format_ingredients(rec.get("active_ingredients")),
         _clean(rec.get("dosage_form")),
+        _clean(", ".join(rec.get("route") or [])),
         package,
         _clean(rec.get("labeler_name")),
     ]

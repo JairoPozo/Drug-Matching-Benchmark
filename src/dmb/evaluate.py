@@ -1,7 +1,8 @@
 """Run a matcher on a split and write metrics, PR curve and predictions to reports/.
 
 The test split is frozen: it can only be evaluated with --final, and only once
-(a second run needs --force-rerun and is logged).
+(a second run needs --force-rerun and is logged). Test never picks its own thresholds: it applies
+the ones fixed on the matcher's latest full dev run, so the test numbers are not tuned to test.
 """
 
 from __future__ import annotations
@@ -15,7 +16,15 @@ import polars as pl
 
 from dmb.config import TARGET_PRECISION, TOP_K, Paths, read_json, write_json
 from dmb.matchers import get_matcher
-from dmb.metrics import best_f1, decision_metrics, pick_threshold, pr_curve, ranking_metrics
+from dmb.metrics import (
+    best_f1,
+    calibration,
+    decision_metrics,
+    pick_threshold,
+    pr_curve,
+    ranking_metrics,
+    subgroup_metrics,
+)
 
 TEST_LOG = "test_runs.log"
 
@@ -37,6 +46,63 @@ def _guard_test(paths: Paths, split: str, final: bool, force_rerun: bool) -> Non
             f"Test was already evaluated (see {log_path}). Re-running needs --force-rerun, "
             "and the extra run stays in the log."
         )
+
+
+def _dev_reference(paths: Paths, matcher_name: str) -> tuple[dict, str] | None:
+    """Latest full (no --limit) dev run of this matcher: its thresholds are used on test."""
+    for path in sorted(paths.reports.glob(f"*_{matcher_name}_dev/metrics.json"), reverse=True):
+        m = read_json(path, {}) or {}
+        if m.get("split") == "dev" and not m.get("limit"):
+            return m, path.parent.name
+    return None
+
+
+_INJECTABLE = {
+    "INTRAVENOUS",
+    "INTRAMUSCULAR",
+    "SUBCUTANEOUS",
+    "INTRADERMAL",
+    "INTRATHECAL",
+    "EPIDURAL",
+    "INTRAVITREAL",
+    "INTRA-ARTICULAR",
+    "INFILTRATION",
+    "INTRACAVERNOUS",
+    "INTRALESIONAL",
+    "PERINEURAL",
+}
+_ROUTES = {
+    "ORAL": "oral",
+    "TOPICAL": "topical",
+    "OPHTHALMIC": "ophthalmic",
+    "NASAL": "nasal",
+    "DENTAL": "dental",
+    "RESPIRATORY (INHALATION)": "inhalation",
+}
+
+
+def _route_group(route: str | None) -> str:
+    parts = [p.strip() for p in (route or "").split(",") if p.strip()]
+    if not parts:
+        return "unknown"
+    kinds = {"injectable" if p in _INJECTABLE else _ROUTES.get(p, "other") for p in parts}
+    return kinds.pop() if len(kinds) == 1 else "multiple"
+
+
+def subgroup_labels(df: pl.DataFrame) -> dict[str, list[str]]:
+    """Subgroups reported separately (computed from the split's own columns)."""
+    types = {"HUMAN PRESCRIPTION DRUG": "prescription", "HUMAN OTC DRUG": "otc"}
+    return {
+        "ingredients": [
+            "0 (kit, no ingredients)" if n == 0 else "1" if n == 1 else "2+"
+            for n in df["n_ingredients"].fill_null(0).to_list()
+        ],
+        "route": [_route_group(r) for r in df["route"].to_list()],
+        "catalog": [
+            "in catalog" if x else "not in catalog (NIL)" for x in df["in_catalog"].to_list()
+        ],
+        "product_type": [types.get(t or "", "other") for t in df["product_type"].to_list()],
+    }
 
 
 def _git_commit(root: Path) -> str | None:
@@ -67,6 +133,14 @@ def evaluate(
     if split not in ("dev", "test"):
         raise ValueError("split must be 'dev' or 'test'")
     _guard_test(paths, split, final, force_rerun)
+    dev_ref = None
+    if split == "test":
+        dev_ref = _dev_reference(paths, matcher_name)
+        if dev_ref is None:
+            raise FrozenSplitError(
+                "Test applies the thresholds fixed on dev. Run a full dev evaluation of this "
+                "matcher first (without --limit)."
+            )
 
     split_path = paths.processed / f"{split}.parquet"
     if not split_path.exists():
@@ -91,10 +165,19 @@ def evaluate(
     expected = df["expected_rxcui"].to_list()
     ranking = ranking_metrics(expected, candidates, ks=(1, k))
     curve = pr_curve(expected, candidates)
-    op = pick_threshold(curve, target_precision)
-    bf = best_f1(curve)
-    at_target = decision_metrics(expected, candidates, op["threshold"]) if op else None
-    at_best_f1 = decision_metrics(expected, candidates, bf["threshold"]) if bf else None
+    if dev_ref:  # test: thresholds come from dev, never from test itself
+        ref = dev_ref[0]
+        t_target = (ref.get("at_target_precision") or {}).get("threshold")
+        t_f1 = (ref.get("at_best_f1") or {}).get("threshold")
+    else:
+        op, bf = pick_threshold(curve, target_precision), best_f1(curve)
+        t_target = op["threshold"] if op else None
+        t_f1 = bf["threshold"] if bf else None
+    at_target = decision_metrics(expected, candidates, t_target) if t_target is not None else None
+    at_best_f1 = decision_metrics(expected, candidates, t_f1) if t_f1 is not None else None
+    op_name, t_op = ("target_precision", t_target) if t_target is not None else ("best_f1", t_f1)
+    calib = calibration(expected, candidates)
+    subgroups = subgroup_metrics(subgroup_labels(df), expected, candidates, t_op)
 
     stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     run_dir = paths.reports / f"{stamp}_{matcher_name}_{split}"
@@ -104,6 +187,8 @@ def evaluate(
         "matcher": matcher_name,
         "split": split,
         "final": final,
+        "limit": limit,
+        "thresholds_from": dev_ref[1] if dev_ref else "this split",
         "created_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "git_commit": _git_commit(paths.root),
         "n_queries": df.height,
@@ -114,6 +199,8 @@ def evaluate(
         "target_precision": target_precision,
         "at_target_precision": at_target,
         "at_best_f1": at_best_f1,
+        "calibration": calib,
+        "subgroups": {"operating_point": op_name, "threshold": t_op, "groups": subgroups},
         "timing_seconds": {
             "fit": round(t_fit, 3),
             "match_total": round(t_match, 3),
@@ -123,8 +210,17 @@ def evaluate(
     }
     write_json(run_dir / "metrics.json", metrics)
     pl.DataFrame(curve).write_csv(run_dir / "pr_curve.csv")
+    if calib["bins"]:
+        pl.DataFrame(calib["bins"]).write_csv(run_dir / "calibration.csv")
     _write_predictions(df, candidates, run_dir / "predictions.parquet")
-    _plot_pr(curve, op, run_dir / "pr_curve.png", f"{matcher_name} on {split}")
+    mark = None
+    if at_target and at_target["accept_precision"] is not None:
+        mark = {
+            "threshold": t_target,
+            "precision": at_target["accept_precision"],
+            "recall": at_target["accept_recall"],
+        }
+    _plot_pr(curve, mark, run_dir / "pr_curve.png", f"{matcher_name} on {split}")
 
     if split == "test":
         with (paths.reports / TEST_LOG).open("a", encoding="utf-8") as f:
@@ -212,5 +308,24 @@ def _print_summary(m: dict, run_dir: Path, log) -> None:
             f"F1={_fmt(d['accept_f1'])} | abstain P={_fmt(d['abstain_precision'])} "
             f"R={_fmt(d['abstain_recall'])}"
         )
+    op = m["at_target_precision"] or m["at_best_f1"]
+    if op:
+        c = op["counts"]
+        log(
+            f"decisions (t={op['threshold']:.3f}): correct {c['correct_accept']}, "
+            f"wrong {c['wrong_accept']}, accepted-but-NIL {c['accept_on_nil']}, "
+            f"missed {c['missed']}, correct abstain {c['correct_abstain']} | "
+            f"false accept rate {_fmt(op['false_accept_rate'])}, coverage {_fmt(op['coverage'])}"
+        )
+    log(f"calibration ECE       {_fmt(m['calibration']['ece'])} (0 = score is a probability)")
+    log(f"thresholds from       {m['thresholds_from']}")
+    sg = m["subgroups"]
+    log(f"subgroups at {sg['operating_point']} threshold: n | acc@1 | end-to-end | false accept")
+    for dim, rows in sg["groups"].items():
+        for label, r in rows.items():
+            log(
+                f"  {dim:<13}{label:<26}{r['n']:>5} | {_fmt(r['accuracy@1'])} | "
+                f"{_fmt(r['end_to_end_accuracy'])} | {_fmt(r['false_accept_rate'])}"
+            )
     log(f"match time            {m['timing_seconds']['match_per_query_ms']:.2f} ms/query")
     log(f"report -> {run_dir}")

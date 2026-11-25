@@ -12,6 +12,7 @@ def test_query_text_uses_ndc_fields_only():
     assert "Brand7" in text
     assert "IBUPROFEN 200 mg/1" in text
     assert "TABLET" in text
+    assert "TABLET ORAL 100 TABLET" in text  # route after the dosage form (v0.3)
     assert "100 TABLET in 1 BOTTLE" in text
     assert "Lab 0" in text
     assert LEAK_SENTINEL not in text

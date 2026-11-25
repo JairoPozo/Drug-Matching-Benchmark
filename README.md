@@ -51,12 +51,12 @@ uv run pytest; uv run ruff check .
 `make data` downloads roughly 60 MB of zips (plus the extracted RRF files) into `data/raw/`
 and writes `data/raw/manifest.json` with each source's version, URL and sha256.
 
-## Benchmark definition (v0.1)
+## Benchmark definition (query format v0.3)
 
 | | |
 |---|---|
 | Query unit | One NDC product (`product_ndc`), not each package |
-| Query text (format v0.2) | `{brand_name} {ingredients + strength} {dosage_form} {first package description} {labeler_name}`, with the package NDC code removed from the description (a real catalog would not carry it). Never any `openfda.*` field (they come from RxNorm and would leak the answer) |
+| Query text (format v0.3) | `{brand_name} {ingredients + strength} {dosage_form} {route} {first package description} {labeler_name}`, built only from these NDC fields (`dmb.ndc.QUERY_FIELDS`). The package NDC code is removed from the description (a real catalog would not carry it). Never any `openfda.*` field (they come from RxNorm and would leak the answer) |
 | Label | The RxCUI in `openfda.rxcui` whose RxNorm term type is `SCD` |
 | Exclusions | Products with zero or more than one SCD (kits, multi-packs, ...), counted by reason in `data/processed/build_stats.json` |
 | Catalog | All active `SCD` concepts with `SAB=RXNORM`; **10% are held out** so "not in catalog" (NIL) is a measurable answer |
@@ -67,15 +67,38 @@ and writes `data/raw/manifest.json` with each source's version, URL and sha256.
 - **Ranking** (answerable queries): accuracy@1, recall@5.
 - **Accept/abstain decision** at threshold *t* (accept top-1 if score ≥ *t*):
   precision = correct accepts / accepts, recall = correct accepts / answerable queries, F1.
+- **Decision counts**: every query is exactly one of *correct accept*, *wrong accept* (a wrong
+  concept although the right one is in the catalog), *accept on NIL* (accepted something that is
+  not in the catalog), *missed* (abstained although answerable) or *correct abstain*. Reported with
+  the **false accept rate** (wrong accepts / accepts) and **coverage** (accepts / queries). A wrong
+  accept is worse than an abstention: in a pharmacy catalog it links the wrong medicine.
 - **Abstention** (NIL detection): precision and recall of abstaining on held-out concepts.
 - **Precision-recall curve** over all thresholds; the reported operating point is the highest
-  recall with precision ≥ 95% (automatic matching).
+  recall with precision ≥ 95% (automatic matching), plus the best-F1 point.
+- **Calibration**: precision of the top-1 answer per score bin and the expected calibration error
+  (ECE). It says whether a score of 0.8 really means "right 80% of the time".
+- **Subgroups**, reported separately at the operating threshold: number of ingredients
+  (0 = kits that declare no ingredient, 1, 2+), route (oral, topical, ophthalmic, nasal, dental,
+  injectable, ...), in catalog vs. not in catalog (NIL), prescription vs. OTC.
 
 ## Rules of the benchmark
 
 - Data is never committed: `make data` downloads it and records versions + checksums.
 - The test split is frozen. `dmb eval --split test` refuses to run without `--final`, and a
   second test run needs `--force-rerun` and is logged in `reports/test_runs.log`.
+- **Matchers are developed and tuned on dev only.** On test, the decision thresholds are not
+  picked again: `dmb eval` applies the ones fixed on the matcher's latest full dev run, and
+  records which run in `metrics.json` (`thresholds_from`).
+- **The query format is frozen before test is evaluated.** It is never changed after looking at
+  test results.
+- **Allowed resources for a matcher**: the query text and the catalog, plus RxNorm's own names,
+  synonyms and attributes (`RXNCONSO`, `RXNREL`, `RXNSAT`, e.g. ingredient synonyms or the basis
+  of strength). **Not allowed**: NDC codes stored in RxNorm (`RXNSAT` NDC attributes), any
+  `openfda.*` field, and any external source that maps a product to its RxCUI (e.g. DailyMed or
+  RxNav lookups). Each of them gives the answer away. Tools given to an LLM agent follow the same
+  rule.
+- Kits that declare no active ingredient stay in the benchmark and are reported as their own
+  subgroup: text rules cannot solve them, so they show where outside knowledge helps.
 - Exploration happens in notebooks (`make notebook`); official numbers come from `dmb eval`.
 - To pin the RxNorm release, set `rxnorm_release` in `sources.json` (e.g. `"10052026"`).
   openFDA only serves the latest NDC export, so NDC is tracked by export date + sha256, and the

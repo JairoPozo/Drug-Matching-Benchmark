@@ -7,6 +7,16 @@ Conventions
 - Accept precision = correct accepts / accepts.
 - Accept recall    = correct accepts / answerable queries.
 - Abstention (NIL detection): precision = abstained NIL / abstentions, recall = abstained NIL / NIL.
+- Decision counts: every query is exactly one of
+    correct_accept   accepted the right concept
+    wrong_accept     accepted a wrong concept although the right one is in the catalog
+    accept_on_nil    accepted a concept although the right one is not in the catalog
+    missed           abstained although the right concept is in the catalog
+    correct_abstain  abstained and the right concept is not in the catalog
+  false_accept_rate = (wrong_accept + accept_on_nil) / accepts; coverage = accepts / queries.
+- Calibration: top-1 scores are binned; in each bin precision should equal the mean score.
+  ECE (expected calibration error) is the size-weighted gap. A score is only a probability if
+  ECE is close to 0.
 """
 
 from __future__ import annotations
@@ -49,17 +59,21 @@ def decision_metrics(
     n = len(expected)
     n_nil = sum(e is None for e in expected)
     n_ans = n - n_nil
-    tp = fp = abst = abst_nil = 0
+    tp = wrong = on_nil = missed = abst_nil = 0
     for e, c in zip(expected, candidates, strict=True):
         top, score = _top1(c)
         if top is not None and score >= threshold:
             if e is not None and top == e:
                 tp += 1
+            elif e is None:
+                on_nil += 1
             else:
-                fp += 1
+                wrong += 1
+        elif e is None:
+            abst_nil += 1
         else:
-            abst += 1
-            abst_nil += e is None
+            missed += 1
+    fp, abst = wrong + on_nil, missed + abst_nil
     p, r = _safe_div(tp, tp + fp), _safe_div(tp, n_ans)
     return {
         "threshold": threshold,
@@ -71,6 +85,15 @@ def decision_metrics(
         "abstain_precision": _safe_div(abst_nil, abst),
         "abstain_recall": _safe_div(abst_nil, n_nil),
         "end_to_end_accuracy": _safe_div(tp + abst_nil, n),
+        "false_accept_rate": _safe_div(fp, tp + fp),
+        "coverage": _safe_div(tp + fp, n),
+        "counts": {
+            "correct_accept": tp,
+            "wrong_accept": wrong,
+            "accept_on_nil": on_nil,
+            "missed": missed,
+            "correct_abstain": abst_nil,
+        },
     }
 
 
@@ -113,3 +136,61 @@ def pick_threshold(curve: list[dict], target_precision: float) -> dict | None:
 def best_f1(curve: list[dict]) -> dict | None:
     rows = [r for r in curve if r["f1"] is not None]
     return max(rows, key=lambda r: r["f1"]) if rows else None
+
+
+def calibration(
+    expected: Sequence[str | None], candidates: Sequence[Candidates], n_bins: int = 10
+) -> dict:
+    """Precision of the top-1 answer per score bin, and the expected calibration error."""
+    bins = [[0, 0.0, 0] for _ in range(n_bins)]  # n, sum of scores, correct
+    for e, c in zip(expected, candidates, strict=True):
+        top, score = _top1(c)
+        if top is None:
+            continue
+        s = min(max(score, 0.0), 1.0)
+        b = bins[min(int(s * n_bins), n_bins - 1)]
+        b[0] += 1
+        b[1] += s
+        b[2] += e is not None and top == e
+    total = sum(b[0] for b in bins)
+    rows, ece = [], 0.0
+    for i, (n, ssum, correct) in enumerate(bins):
+        if not n:
+            continue
+        conf, prec = ssum / n, correct / n
+        ece += n / total * abs(prec - conf)
+        rows.append(
+            {
+                "bin": f"{i / n_bins:.1f}-{(i + 1) / n_bins:.1f}",
+                "n": n,
+                "mean_score": conf,
+                "precision": prec,
+            }
+        )
+    return {"ece": ece if total else None, "bins": rows}
+
+
+def subgroup_metrics(
+    groups: dict[str, Sequence[str]],
+    expected: Sequence[str | None],
+    candidates: Sequence[Candidates],
+    threshold: float | None,
+) -> dict:
+    """Ranking and decision metrics restricted to each value of each grouping."""
+    out: dict = {}
+    for dim, labels in groups.items():
+        out[dim] = {}
+        for label in sorted(set(labels)):
+            idx = [i for i, lab in enumerate(labels) if lab == label]
+            e = [expected[i] for i in idx]
+            c = [candidates[i] for i in idx]
+            d = decision_metrics(e, c, threshold) if threshold is not None else None
+            out[dim][label] = {
+                "n": len(idx),
+                "n_nil": sum(x is None for x in e),
+                "accuracy@1": ranking_metrics(e, c, ks=(1,))["accuracy@1"],
+                "end_to_end_accuracy": d["end_to_end_accuracy"] if d else None,
+                "false_accept_rate": d["false_accept_rate"] if d else None,
+                "coverage": d["coverage"] if d else None,
+            }
+    return out

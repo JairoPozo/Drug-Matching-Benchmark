@@ -16,7 +16,7 @@ TARGET_PRECISION = 0.95
 # How dev/test are sampled. A change here makes `dmb build` refuse the old split files until
 # they are re-sampled with `--resample-splits` (allowed only before the test split is frozen).
 SPLIT_METHOD = "grouped-stratified-v1"
-QUERY_FORMAT_VERSION = "v0.2"  # v0.2: package NDC codes dropped from query text
+QUERY_FORMAT_VERSION = "v0.3"  # v0.2: package NDC codes dropped; v0.3: route added
 
 
 @dataclass(frozen=True)
