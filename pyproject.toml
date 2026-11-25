@@ -1,6 +1,6 @@
 [project]
 name = "drug-matching-benchmark"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Benchmark for matching commercial drug product descriptions (FDA NDC) to normalized clinical drugs (RxNorm SCD)."
 readme = "README.md"
 license = "MIT"

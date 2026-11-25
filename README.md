@@ -17,16 +17,51 @@ from public-domain data:
 The task: given a product, return its SCD concept in RxNorm **or answer "not in the catalog"**.
 Output: `(product, concept, confidence)`.
 
-> Status: **v0.1 in progress.** The pipeline (download → build → evaluate) works end to end with
-> a dummy matcher. The rule-based baseline and the final test results are coming.
+> Status: **v0.1.0.** Test evaluated once per matcher on 2026-11-25, from commit `2a8ae99`
+> (tag `v0.1.0-pretest`), with thresholds and coefficients frozen on dev beforehand.
 
-## Results
+## Results (test split, v0.1.0)
 
-| Matcher | Split | accuracy@1 | recall@5 | Accept precision | Accept recall | Threshold |
-|---------|-------|-----------:|---------:|-----------------:|--------------:|----------:|
-| rules   | test  | _tbd_      | _tbd_    | _tbd_ (target ≥ 0.95) | _tbd_   | _tbd_     |
+2,000 test products (182 not in the catalog), never used for any decision. Every number uses the
+thresholds fixed on dev. **Coverage** = share of products accepted automatically; the accept
+threshold is the one that gave ≥ 95% precision on dev.
 
-Error analysis: _tbd_.
+| | Dummy (fuzzy text) | Rules, stage 4 | Rules, stage 5 (+ logistic regression) |
+|---|---:|---:|---:|
+| Top-1 accuracy (products in the catalog) | 54.8% | 85.5% | 85.5% |
+| Right answer in top 5 | 78.3% | 92.7% | 92.5% |
+| **Automatic coverage** | never reaches 95% precision | 50.8% | **67.0%** |
+| Precision of automatic accepts (Wilson 95% CI) | — | 95.2% (93.7–96.3) | 94.9% (93.5–95.9) |
+| False accepts (of which: product not in the catalog) | — | 49 (12) | 69 (20) |
+| Products not in the catalog that were not accepted | — | 93.4% | 89.0% |
+| Sent to review / right answer in their top 5 | — | 41.0% / 96.6% | 24.6% / 94.1% |
+| Abstained: not in the catalog + in the catalog (system failure) | — | 57 + 107 | 58 + 108 |
+| Calibration: ECE / Brier (top-1 per product) | 0.424 / 0.403 | 0.076 / 0.105 | **0.031 / 0.093** |
+
+**Paired comparisons** (same 2,000 products; McNemar exact test on top-1 correctness, paired
+bootstrap 95% intervals):
+
+- Stage 4 vs. dummy: +30.6 points of top-1 accuracy (28.3–33.0), p < 10⁻¹⁰⁰.
+- Stage 5 vs. stage 4: the same top-1 answers (p = 1.0; stage 5 only changes the score) and
+  **+16.3 points of automatic coverage (14.1–18.4)**, at the same precision.
+
+**Dev vs. test** (generalization): stage 5 top-1 accuracy 86.2% → 85.5%, coverage 68.3% →
+67.0%, precision 95.2% → 94.9%, ECE 0.029 → 0.031. The test precision lands just under the 95%
+target as a point estimate; the 95% interval (93.5–95.9) includes it.
+
+**Trade-off.** Stage 5 accepts 325 more products automatically than stage 4, at about the same
+precision, but lets 8 more products that are not in the catalog through (20 vs. 12): 89.0% of
+them are still kept out of automatic matching, against 93.4% for stage 4. Pick stage 4 when a
+false link to an absent product is the costliest error; stage 5 when review time is.
+
+**Where it still fails** (stage 5, test): dental products (65.7% top-1, 41.7% of their automatic
+accepts are wrong: fluoride toothpastes declare the fluoride ion while RxNorm uses the salt, and
+train has no stable factor for it), kits that declare no ingredient (0%: only outside knowledge
+of the brand can solve them), inhalation products (38.2%). Ophthalmic products reach 100% top-1
+and oral products 95.4%.
+
+Full numbers: `results/v0.1.0/` (frozen dev references, `freeze.json` with data hashes, test
+metrics and `test_comparison.json`). The rule stages are described below.
 
 ## Quickstart
 
@@ -84,9 +119,9 @@ and writes `data/raw/manifest.json` with each source's version, URL and sha256.
   (0 = kits that declare no ingredient, 1, 2+), route (oral, topical, ophthalmic, nasal, dental,
   injectable, ...), in catalog vs. not in catalog (NIL), prescription vs. OTC.
 
-## Baselines on dev (work in progress)
+## How the rules were built (dev split)
 
-Numbers on the 2,000 dev queries (185 not in the catalog). Test has not been evaluated yet.
+Numbers on the 2,000 dev queries (185 not in the catalog), used to build every stage.
 Coverage is the share of queries accepted automatically at ≥ 95% precision.
 
 | Matcher | accuracy@1 | recall@5 | coverage at 95% precision | ECE | Brier |
@@ -145,17 +180,29 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ```
 ├── sources.json          # pinned source versions
 ├── splits/               # frozen dev/test IDs + derived train IDs (committed)
+├── results/v0.1.0/       # freeze (dev thresholds, coefficients, data hashes) + test results
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/
 │   ├── download.py       # fetch NDC + RxNorm, record version and checksum
-│   ├── build.py          # catalog, queries, labels, exclusions, splits
+│   ├── build.py          # catalog, queries, labels, exclusions, grouped splits
 │   ├── ndc.py / rxnorm.py
-│   ├── matchers/         # base interface, dummy, rules (baseline)
-│   ├── metrics.py
-│   └── evaluate.py       # metrics.json, pr_curve.csv/.png, predictions.parquet
+│   ├── rxvocab.py        # the only RxNorm reader for matchers: allowed vocabulary
+│   ├── parse.py          # query text and catalog names -> ingredients, strengths, form, route
+│   ├── strength.py       # strength normalization and learned conversion factors
+│   ├── forms.py          # dose form compatibility table learned from train
+│   ├── matchers/         # base interface, dummy, rules (stages 1-5)
+│   ├── metrics.py        # ranking, decisions, calibration, bands
+│   ├── evaluate.py       # metrics.json, pr_curve, calibration.csv, predictions.parquet
+│   └── compare.py        # dmb freeze / dmb compare (paired tests)
 └── tests/                # synthetic fixtures, no network needed
 ```
+
+Reproduce the test results: `make data build`, then for each matcher
+`dmb eval --matcher <name> [--param stage=N] --split dev` (fixes its thresholds), and
+`dmb eval ... --split test --final` once. `dmb compare --split test --version v0.1.0 --matcher
+dummy --matcher rules-stage4 --matcher rules-stage5` checks the data hashes and thresholds
+against `results/v0.1.0/freeze.json`.
 
 Adding a matcher: subclass `dmb.matchers.base.Matcher`, implement
 `match(query, k) -> [(rxcui, score)]` (scores in [0, 1], best first) and register it in
