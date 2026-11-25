@@ -1,0 +1,4 @@
+{
+  "rxnorm_release": null,
+  "_comment": "rxnorm_release: null downloads the latest RxNorm Current Prescribable Content. Pin it (e.g. \"10052026\", format MMDDYYYY) before tagging v0.1.0 so anyone gets the same catalog. openFDA only serves the latest NDC export, so NDC is tracked by export_date + sha256 in data/raw/manifest.json, and the frozen split IDs live in splits/."
+}

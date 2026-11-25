@@ -1,0 +1,9 @@
+{
+  "method": "grouped-stratified-v1",
+  "seed": 42,
+  "n_dev": 2000,
+  "n_test": 2000,
+  "group_key": "brand + ingredients with strength + dosage form, lowercased",
+  "unit": "one product per group; a group never appears in two splits",
+  "stratified_by": "product_type (quotas = share of products of each type)"
+}

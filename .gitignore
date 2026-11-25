@@ -1,0 +1,23 @@
+# Data is downloaded with `make data`, never committed
+data/
+
+# Per-run reports (commit official ones explicitly with `git add -f`)
+reports/*
+!reports/.gitkeep
+
+# Python / tooling
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
