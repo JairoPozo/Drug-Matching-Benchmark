@@ -112,13 +112,13 @@ Evaluación final según el pre-registro (`plan.md`, Enmienda 1 y Desviación 1)
 | | Cobertura dev → test2 | Precisión dev → test2 | Inexistentes aceptados dev → test2 |
 |---|---|---|---|
 | `rules-stage5@wilson` | 64,7 % → 64,6 % | 96,2 % → 96,2 % | 23/185 → 19/175 |
-| v0.2.0 | 72,7 % → 72,6 % | 96,2 % → 95,0 % | 27/185 → 28/175 |
+| v0.2.0 | 72,7 % → 72,6 % | 96,1 % → 95,0 % | 27/185 → 28/175 |
 
 - La cobertura de ambas se mantiene.
 - La precisión de la línea base se mantiene; la de la v0.2.0 baja 1,1 puntos.
-- Explicación plausible, no probada: la v0.2.0 se eligió entre 82 configuraciones en dev, y el
-  ganador de una selección así suele verse mejor en dev de lo que es (sesgo del ganador). La línea
-  base no compitió contra alternativas.
+- Explicación plausible, no probada: la v0.2.0 se eligió entre 34 configuraciones distintas en dev
+  (50 filas evaluadas), y el ganador de una selección así suele verse mejor en dev de lo que es
+  (sesgo del ganador). La línea base no compitió contra alternativas.
 
 ## 5. Lectura para el paper
 
@@ -133,3 +133,49 @@ Evaluación final según el pre-registro (`plan.md`, Enmienda 1 y Desviación 1)
 - Las hipótesis se reportan tal como quedaron. Cualquier cambio de ahora en adelante es exploratorio
   y necesitaría otro split independiente para confirmarse (por ejemplo, un test temporal con una
   descarga futura del NDC).
+
+## 6. Secundario: la v0.2.0 en el test de la v0.1.0
+
+Es el análisis opcional del plan (sección 6.5). La v0.2.0 se evaluó una sola vez en ese test (commit
+`f08d369`, etiqueta `v0.2.0`), con los umbrales congelados en dev. Archivos:
+`test/<matcher>.json` y `test_secondary.json` (`scripts/test_secondary.py`).
+
+**No reemplaza a test2 ni se usa para decidir nada**, por tres razones:
+
+- Las debilidades que ataca la v0.2.0 se vieron en este test, así que no es independiente de su
+  diseño.
+- Las corridas de la v0.1.0 entrenaron con más datos (36.059 productos contra 30.375).
+- El stage 5 de la v0.1.0 usó el umbral puntual.
+
+Por eso la comparación mezcla método de puntaje, regla de umbral y tamaño de train. Es solo
+descriptiva.
+
+| Test de la v0.1.0 (2.000 productos, 182 inexistentes) | stage 4 (v0.1.0) | stage 5 (v0.1.0, puntual) | v0.2.0 (Wilson) |
+|---|---:|---:|---:|
+| Acierto top 1 (en catálogo) | 85,5 % | 85,5 % | 86,5 % |
+| Cobertura automática | 50,8 % | 67,0 % | 71,6 % |
+| Precisión de lo aceptado (Wilson 95 %) | 95,2 % (93,7–96,3) | 94,9 % (93,5–95,9) | 96,7 % (95,7–97,5) |
+| Aceptaciones falsas (de ellas, inexistentes) | 49 (12) | 69 (20) | 47 (24) |
+| ECE / Brier | 0,076 / 0,105 | 0,031 / 0,093 | 0,022 / 0,066 |
+
+- Contra el stage 5 de la v0.1.0:
+  - Cobertura: +4,5 puntos (3,0 a 6,0).
+  - 112 aceptaciones correctas más y 22 falsas menos: en este test, la v0.2.0 domina.
+  - Acierto top 1: +1,0 punto (0,1 a 1,9), McNemar p = 0,036.
+  - Inexistentes aceptados: 24 contra 20 (+2,2 puntos, −2,2 a 6,6; p = 0,45), sin significancia.
+- Categorías:
+  - Dentales (68): el acierto top 1 baja de 65,7 % a 59,7 %, y las aceptaciones falsas pasan de
+    10 de 24 a 3 de 27.
+  - Inhalados (39): el acierto top 1 pasa de 38,2 % a 35,3 %; 1 falsa de 11 en ambos.
+  - Kits (33): ninguno aceptado.
+
+Lectura:
+
+- **El mismo modelo da 96,7 % de precisión en un test y 95,0 % en el otro.** Son dos muestras de
+  2.000 productos, y los intervalos de Wilson apenas se solapan (entre 95,7 % y 96,0 %). La
+  diferencia muestra cuánto varía la precisión de una muestra a otra, y es una razón más para
+  reportar intervalos y elegir el umbral con el límite inferior. También puede influir que el
+  diseño se inspiró en este test.
+- El resultado confirmatorio sigue siendo **test2**.
+- **Lo que se repite en dev, test y test2** es que la v0.2.0 acepta más productos inexistentes que
+  su línea base: 27 contra 23, 24 contra 20 y 28 contra 19.

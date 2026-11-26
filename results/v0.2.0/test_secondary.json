@@ -1,0 +1,236 @@
+{
+  "note": "Secondary and optional (plan.md 6.5). Descriptive: the v0.1.0 runs used a larger train (36,059) and, for stage 5, the point threshold rule. Not used for decisions.",
+  "split": "test (v0.1.0)",
+  "matchers": {
+    "rules-stage4": {
+      "run": "20261125-224456_rules-stage4_test",
+      "git_commit": "2a8ae99",
+      "accuracy@1": 0.8547854785478548,
+      "recall@5": 0.9268426842684269,
+      "ece": 0.07634610042503112,
+      "brier": 0.1049541738269366,
+      "t_accept_95": 0.9926315789473683,
+      "t_abstain": null,
+      "n_nil": 182,
+      "nil_accept_rate": 0.06593406593406594,
+      "coverage": 0.508,
+      "accepted": 1016,
+      "accept_precision": 0.9517716535433071,
+      "accept_precision_ci95": [
+        0.9368107915261914,
+        0.9633289948876986
+      ],
+      "false_accepts": 49,
+      "false_accepts_on_nil": 12,
+      "nil_not_accepted": 0.9340659340659341,
+      "review_share": 0.41,
+      "review_answer_in_top5": 0.9660537482319661,
+      "abstain_share": 0.082,
+      "abstain_not_in_catalog": 57,
+      "abstain_in_catalog": 107
+    },
+    "rules-stage5": {
+      "run": "20261125-224844_rules-stage5_test",
+      "git_commit": "2a8ae99",
+      "accuracy@1": 0.8547854785478548,
+      "recall@5": 0.9251925192519251,
+      "ece": 0.03065197691255565,
+      "brier": 0.09275430442661094,
+      "t_accept_95": 0.7539127472890044,
+      "t_abstain": 0.010478155788538222,
+      "n_nil": 182,
+      "nil_accept_rate": 0.10989010989010989,
+      "coverage": 0.6705,
+      "accepted": 1341,
+      "accept_precision": 0.9485458612975392,
+      "accept_precision_ci95": [
+        0.9353877031987446,
+        0.9591414368873444
+      ],
+      "false_accepts": 69,
+      "false_accepts_on_nil": 20,
+      "nil_not_accepted": 0.8901098901098901,
+      "review_share": 0.2465,
+      "review_answer_in_top5": 0.9408740359897172,
+      "abstain_share": 0.083,
+      "abstain_not_in_catalog": 58,
+      "abstain_in_catalog": 108
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+      "run": "20261126-010419_rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson_test",
+      "git_commit": "f08d369",
+      "accuracy@1": 0.8646864686468647,
+      "recall@5": 0.9312431243124313,
+      "ece": 0.021969284981016985,
+      "brier": 0.06627297476045708,
+      "t_accept_95": 0.7895487612326103,
+      "t_abstain": 0.05251598616402681,
+      "n_nil": 182,
+      "nil_accept_rate": 0.13186813186813187,
+      "coverage": 0.7155,
+      "accepted": 1431,
+      "accept_precision": 0.9671558350803634,
+      "accept_precision_ci95": [
+        0.9565985229350138,
+        0.9752116503970112
+      ],
+      "false_accepts": 47,
+      "false_accepts_on_nil": 24,
+      "nil_not_accepted": 0.8681318681318682,
+      "review_share": 0.184,
+      "review_answer_in_top5": 0.9662162162162162,
+      "abstain_share": 0.1005,
+      "abstain_not_in_catalog": 86,
+      "abstain_in_catalog": 115
+    }
+  },
+  "paired": {
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson vs rules-stage4 (v0.1.0)": {
+      "accuracy@1_diff_ci95": [
+        0.009900990099009901,
+        0.0011001100110011,
+        0.0187018701870187
+      ],
+      "mcnemar_p_top1": 0.03558272445223169,
+      "coverage_diff_ci95": [
+        0.2075,
+        0.187,
+        0.228
+      ],
+      "nil_accept_rate_diff_ci95": [
+        0.06593406593406594,
+        0.02197802197802198,
+        0.10989010989010989
+      ],
+      "mcnemar_p_nil_accepted": 0.01181793212890625,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 163,
+          "abstain->accept": 1,
+          "accept->accept": 953,
+          "accept->review": 63,
+          "review->abstain": 38,
+          "review->accept": 477,
+          "review->review": 305
+        },
+        "newly_accepted": 478,
+        "newly_accepted_right": 450,
+        "no_longer_accepted": 63
+      },
+      "extra_correct_accepts": 417,
+      "extra_false_accepts": -2,
+      "dominates": true,
+      "incremental_precision": null
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson vs rules-stage5 (v0.1.0)": {
+      "accuracy@1_diff_ci95": [
+        0.009900990099009901,
+        0.0011001100110011,
+        0.0187018701870187
+      ],
+      "mcnemar_p_top1": 0.03558272445223169,
+      "coverage_diff_ci95": [
+        0.045,
+        0.0295,
+        0.06
+      ],
+      "nil_accept_rate_diff_ci95": [
+        0.02197802197802198,
+        -0.02197802197802198,
+        0.06593406593406594
+      ],
+      "mcnemar_p_nil_accepted": 0.454498291015625,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 164,
+          "abstain->accept": 1,
+          "abstain->review": 1,
+          "accept->abstain": 2,
+          "accept->accept": 1262,
+          "accept->review": 77,
+          "review->abstain": 35,
+          "review->accept": 168,
+          "review->review": 290
+        },
+        "newly_accepted": 169,
+        "newly_accepted_right": 153,
+        "no_longer_accepted": 79
+      },
+      "extra_correct_accepts": 112,
+      "extra_false_accepts": -22,
+      "dominates": true,
+      "incremental_precision": null
+    }
+  },
+  "h4_subgroups": {
+    "rules-stage4": {
+      "route=dental": {
+        "n": 68,
+        "n_nil": 1,
+        "accuracy@1": 0.6567164179104478,
+        "accepted": 1,
+        "false_accepts": 1
+      },
+      "route=inhalation": {
+        "n": 39,
+        "n_nil": 5,
+        "accuracy@1": 0.38235294117647056,
+        "accepted": 2,
+        "false_accepts": 0
+      },
+      "kits": {
+        "n": 33,
+        "n_nil": 5,
+        "accuracy@1": 0.0,
+        "accepted": 0,
+        "false_accepts": null
+      }
+    },
+    "rules-stage5": {
+      "route=dental": {
+        "n": 68,
+        "n_nil": 1,
+        "accuracy@1": 0.6567164179104478,
+        "accepted": 24,
+        "false_accepts": 10
+      },
+      "route=inhalation": {
+        "n": 39,
+        "n_nil": 5,
+        "accuracy@1": 0.38235294117647056,
+        "accepted": 11,
+        "false_accepts": 1
+      },
+      "kits": {
+        "n": 33,
+        "n_nil": 5,
+        "accuracy@1": 0.0,
+        "accepted": 0,
+        "false_accepts": null
+      }
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+      "route=dental": {
+        "n": 68,
+        "n_nil": 1,
+        "accuracy@1": 0.5970149253731343,
+        "accepted": 27,
+        "false_accepts": 3
+      },
+      "route=inhalation": {
+        "n": 39,
+        "n_nil": 5,
+        "accuracy@1": 0.35294117647058826,
+        "accepted": 11,
+        "false_accepts": 1
+      },
+      "kits": {
+        "n": 33,
+        "n_nil": 5,
+        "accuracy@1": 0.0,
+        "accepted": 0,
+        "false_accepts": null
+      }
+    }
+  }
+}

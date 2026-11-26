@@ -112,7 +112,8 @@ estable ni un atributo de RxNorm que la resuelva. H4 queda descriptiva, como est
 
 ## Selección (regla pre-registrada, aplicada sin cambios)
 
-`dmb experiment --select` sobre las 82 configuraciones probadas en dev (`selection.json`):
+`dmb experiment --select` sobre las 50 filas evaluadas en dev, que corresponden a 34 configuraciones
+distintas porque algunas se repiten entre archivos (`selection.json`; corregido: antes decía 82):
 
 - Mayor cobertura con Wilson ≥ 95 %: 72,7 % (gradient boosting, v2 sin `expected_form_missing`).
 - Empate (menos de 0,5 puntos): gradient boosting v1 con 72,35 % (dos filas idénticas: `base` y

@@ -36,6 +36,10 @@ Output: `(product, concept, confidence)`.
 >   and 94.6%).
 > - The v0.2.0 scorer adds coverage, but the extra accepts are riskier (incremental precision
 >   85.5%), and it accepts more products that are not in the catalog, mostly sibling dose forms.
+> - Secondary, descriptive only: on the v0.1.0 test, which is not independent of the v0.2.0 design,
+>   the v0.2.0 reaches 71.6% coverage at 96.7% precision (95.7–97.5), against 67.0% at 94.9% for
+>   the v0.1.0 stage 5. The same model gives 95.0% on `test2`: sample-to-sample variation is why
+>   intervals are reported.
 > - Because `test2` left train, train now has 30,375 products: the v0.1.0 numbers below reproduce
 >   from tag `v0.1.0`.
 
@@ -201,7 +205,7 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ├── splits/               # frozen dev/test IDs + derived train IDs (committed)
 ├── results/v0.1.0/       # freeze (dev thresholds, coefficients, data hashes) + test results
 ├── results/v0.2.0/       # pre-registration, dev experiments, freeze, test2 results and analysis
-├── scripts/              # one-off analyses (test2_analysis.py)
+├── scripts/              # one-off analyses (test2_analysis.py, test_secondary.py)
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/
