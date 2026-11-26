@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this benchmark, please cite it as below."
+type: software
+title: "Drug Matching Benchmark: explicit risk control for linking FDA NDC drug products to RxNorm"
+abstract: >-
+  An open, preregistered benchmark for linking FDA National Drug Code (NDC)
+  product descriptions to RxNorm semantic clinical drug (SCD) concepts, with
+  10% of the concepts removed from the catalog. It includes a rule-based
+  candidate generator, calibrated scoring models, four rules for setting an
+  automatic-acceptance threshold at a 95% precision target (point, Wilson,
+  Learn then Test, and selection with guaranteed risk), comparisons with RxNav
+  and SapBERT, preregistrations, frozen splits, and all results. Public data
+  only: openFDA NDC Directory and RxNorm Current Prescribable Content.
+authors:
+  - given-names: Jairo
+    family-names: Pozo
+    affiliation: "Independent researcher, Chile"
+    orcid: "https://orcid.org/0009-0006-1052-3683"
+repository-code: "https://github.com/JairoPozo/Drug-Matching-Benchmark"
+license: MIT
+version: "0.2.4"
+date-released: "2026-11-26"
+keywords:
+  - RxNorm
+  - NDC
+  - drug normalization
+  - entity linking
+  - benchmark
+  - selective prediction
+  - risk control
+  - health informatics

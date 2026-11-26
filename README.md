@@ -77,6 +77,10 @@ Output: `(product, concept, confidence)`.
 > +3.8 pts, 95% CI 2.4 to 5.3) and accepts fewer products that are not in the catalog (5 vs 19 of
 > 175), but under the same 95% Wilson rule it covers 40.5% of products against 64.6%. With Wilson
 > and Learn then Test, all four SapBERT configurations kept precision above 95%.
+>
+> **v0.2.4: preprint release.** No new experiments: it adds the article figures
+> (`scripts/figures.py`, output in `results/figures/`) and citation metadata (`CITATION.cff`) so
+> that each GitHub release is archived in Zenodo with a DOI.
 
 ## Results (test split, v0.1.0)
 
@@ -236,6 +240,7 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ## Repository layout
 
 ```
+├── CITATION.cff          # citation metadata (GitHub "Cite this repository" and Zenodo)
 ├── sources.json          # pinned source versions
 ├── splits/               # frozen dev/test IDs + derived train IDs (committed)
 ├── results/v0.1.0/       # freeze (dev thresholds, coefficients, data hashes) + test results
