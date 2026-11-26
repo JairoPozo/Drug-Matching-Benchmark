@@ -17,6 +17,16 @@ authors:
     affiliation: "Independent researcher, Chile"
     orcid: "https://orcid.org/0009-0006-1052-3683"
 repository-code: "https://github.com/JairoPozo/Drug-Matching-Benchmark"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.24565365
+    description: "Zenodo concept DOI (all versions of the code)"
+  - type: doi
+    value: 10.5281/zenodo.24565366
+    description: "Zenodo DOI of version v0.2.4, the code used in the preprint"
+  - type: doi
+    value: 10.5281/zenodo.24568480
+    description: "Zenodo DOI of the cached RxNav and SapBERT candidates (v0.2.2 and v0.2.3)"
 license: MIT
 version: "0.2.4"
 date-released: "2026-11-26"

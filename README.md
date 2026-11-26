@@ -1,5 +1,7 @@
 # Drug Matching Benchmark
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24565365.svg)](https://doi.org/10.5281/zenodo.24565365)
+
 **How well can you identify a normalized drug (active ingredient + strength + dose form) from
 the commercial description of a product?**
 
@@ -81,6 +83,12 @@ Output: `(product, concept, confidence)`.
 > **v0.2.4: preprint release.** No new experiments: it adds the article figures
 > (`scripts/figures.py`, output in `results/figures/`) and citation metadata (`CITATION.cff`) so
 > that each GitHub release is archived in Zenodo with a DOI.
+>
+> **Archived in Zenodo:** code v0.2.4,
+> [doi:10.5281/zenodo.24565366](https://doi.org/10.5281/zenodo.24565366) (all versions:
+> [doi:10.5281/zenodo.24565365](https://doi.org/10.5281/zenodo.24565365)); cached RxNav and
+> SapBERT candidates, [doi:10.5281/zenodo.24568480](https://doi.org/10.5281/zenodo.24568480). To
+> rerun the RxNav and SapBERT comparisons exactly, unzip that file into `data/`.
 
 ## Results (test split, v0.1.0)
 
