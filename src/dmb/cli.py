@@ -51,6 +51,19 @@ def _parser() -> argparse.ArgumentParser:
         metavar="KEY=VALUE",
         help="Matcher setting, e.g. --param stage=1 (repeatable)",
     )
+    e.add_argument(
+        "--threshold-rule",
+        default="point",
+        choices=["point", "wilson"],
+        help="How the accept threshold is chosen on dev: observed precision (point) or the "
+        "Wilson 95%% lower bound of the precision (wilson)",
+    )
+    x = sub.add_parser("experiment", help="Dev-only experiments (ablations, scorers)")
+    x.add_argument("--name", required=True, help="Cache and result name, e.g. base")
+    x.add_argument("--param", action="append", default=[], metavar="KEY=VALUE")
+    x.add_argument("--ablate", action="store_true", help="Feature ablation (drop one at a time)")
+    x.add_argument("--scorer", action="append", default=[], choices=["lr", "gb"])
+
     f = sub.add_parser("freeze", help="Freeze dev thresholds and data hashes before test")
     f.add_argument("--version", required=True)
     f.add_argument("--matcher", action="append", required=True, metavar="LABEL")
@@ -96,7 +109,13 @@ def main(argv: list[str] | None = None) -> int:
                 args.limit,
                 args.k,
                 params=params,
+                threshold_rule=args.threshold_rule,
             )
+        elif args.cmd == "experiment":
+            from dmb.experiments import run
+
+            params = dict(p.split("=", 1) for p in args.param)
+            run(paths, args.name, params, args.ablate, args.scorer or ["lr"])
         elif args.cmd == "freeze":
             from dmb.compare import freeze
 

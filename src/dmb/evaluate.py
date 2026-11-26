@@ -143,12 +143,15 @@ def evaluate(
     k: int = TOP_K,
     target_precision: float = TARGET_PRECISION,
     params: dict | None = None,
+    threshold_rule: str = "point",
     log=print,
 ) -> Path:
     if split != "dev" and not is_test_split(split):
         raise ValueError("split must be dev, test or an extra test split (test2, ...)")
     matcher = get_matcher(matcher_name, **(params or {}))
     label = matcher.label  # name + params, e.g. "rules-stage2"
+    if threshold_rule != "point":  # the threshold rule is part of what is evaluated
+        label += f"@{threshold_rule}"
     _guard_test(paths, split, final, force_rerun, label)
     dev_ref = None
     if is_test_split(split):
@@ -184,7 +187,7 @@ def evaluate(
         t_target = (ref.get("at_target_precision") or {}).get("threshold")
         t_f1 = (ref.get("at_best_f1") or {}).get("threshold")
     else:
-        op, bf = pick_threshold(curve, target_precision), best_f1(curve)
+        op, bf = pick_threshold(curve, target_precision, threshold_rule), best_f1(curve)
         t_target = op["threshold"] if op else None
         t_f1 = bf["threshold"] if bf else None
     at_target = decision_metrics(expected, candidates, t_target) if t_target is not None else None
@@ -205,6 +208,7 @@ def evaluate(
     metrics = {
         "matcher": label,
         "params": matcher.params,
+        "threshold_rule": threshold_rule,
         "split": split,
         "final": final,
         "limit": limit,

@@ -15,7 +15,6 @@ compare  Paired comparison on one split: every matcher is scored on the same pro
 from __future__ import annotations
 
 import hashlib
-import math
 import random
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,7 +22,7 @@ from pathlib import Path
 import polars as pl
 
 from dmb.config import QUERY_FORMAT_VERSION, SEED, SPLIT_METHOD, Paths, read_json, write_json
-from dmb.metrics import calibration, decision_bands, decision_metrics, ranking_metrics
+from dmb.metrics import calibration, decision_bands, decision_metrics, ranking_metrics, wilson
 
 N_BOOTSTRAP = 2000
 
@@ -87,16 +86,6 @@ def freeze(paths: Paths, version: str, labels: list[str], log=print) -> Path:
 
 
 # ---------------------------------------------------------------------------------------------
-def wilson(successes: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
-    if n == 0:
-        return None
-    p = successes / n
-    denom = 1 + z * z / n
-    center = (p + z * z / (2 * n)) / denom
-    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
-    return center - half, center + half
-
-
 def mcnemar_p(a: list[bool], b: list[bool]) -> float:
     """Exact two-sided McNemar test on paired right/wrong outcomes."""
     from scipy.stats import binomtest

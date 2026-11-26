@@ -130,9 +130,39 @@ def pr_curve(expected: Sequence[str | None], candidates: Sequence[Candidates]) -
     return rows
 
 
-def pick_threshold(curve: list[dict], target_precision: float) -> dict | None:
-    """Highest-recall point whose precision >= target (ties -> higher precision)."""
-    ok = [row for row in curve if row["precision"] >= target_precision]
+def wilson(successes: int, n: int, z: float = 1.96) -> tuple[float, float] | None:
+    """Wilson score interval for a proportion (95% by default)."""
+    import math
+
+    if n == 0:
+        return None
+    p = successes / n
+    denom = 1 + z * z / n
+    center = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return center - half, center + half
+
+
+THRESHOLD_RULES = ("point", "wilson")
+
+
+def pick_threshold(curve: list[dict], target_precision: float, rule: str = "point") -> dict | None:
+    """Highest-recall point that meets the precision target (ties -> higher precision).
+
+    rule "point": observed precision >= target.
+    rule "wilson": the lower bound of the Wilson 95% interval of the precision >= target, so the
+    target still holds, with 95% confidence, on the population the sample comes from.
+    """
+    if rule not in THRESHOLD_RULES:
+        raise ValueError(f"threshold rule must be one of {THRESHOLD_RULES}")
+
+    def meets(row: dict) -> bool:
+        if rule == "point":
+            return row["precision"] >= target_precision
+        n = row["n_accepted"]
+        return wilson(round(row["precision"] * n), n)[0] >= target_precision
+
+    ok = [row for row in curve if meets(row)]
     if not ok:
         return None
     return max(ok, key=lambda r: (r["recall"] or 0.0, r["precision"]))

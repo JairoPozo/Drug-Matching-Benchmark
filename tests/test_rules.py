@@ -295,3 +295,32 @@ def test_hidden_concept_simulates_not_in_catalog():
     feats = dict(m._candidate_features(q))
     assert feats["1"]["is_top"] == 1.0 and feats["1"]["heuristic_gap"] > 0
     assert feats["2"]["is_top"] == 0.0 and feats["2"]["heuristic_gap"] < 0
+
+
+def test_ablation_params_keep_base_labels():
+    assert RulesMatcher(stage=5).label == "rules-stage5"
+    assert RulesMatcher(stage=5, drop="sim,is_top").label == "rules-dropis_top+sim-stage5"
+    assert RulesMatcher(stage=5, conversions=0).label == "rules-conversions0-stage5"
+    assert RulesMatcher(stage=5, filter_forms="0").label == "rules-filter_forms0-stage5"
+    with pytest.raises(ValueError):
+        RulesMatcher(stage=5, drop="not_a_feature")
+
+
+def test_filter_forms_off_keeps_incompatible_candidates():
+    vocab = Vocab(
+        name_to_in={"sodium fluoride": frozenset({"IN9"})}, dose_forms=["Toothpaste", "Mouthwash"]
+    )
+    catalog = pl.DataFrame(
+        {
+            "rxcui": ["10", "11"],
+            "name": [
+                "sodium fluoride 1 MG/ML Mouthwash",
+                "sodium fluoride 0.0024 MG/MG Toothpaste",
+            ],
+        }
+    )
+    q = "Kids Paste SODIUM FLUORIDE 1.5 mg/g PASTE, DENTIFRICE DENTAL 119 g in 1 TUBE Lab"
+    m = RulesMatcher(stage=3, filter_forms=0)
+    m.fit(catalog, vocab=vocab, form_model=_form_model())
+    feats = dict(m._candidate_features(q))
+    assert set(feats) == {"10", "11"} and feats["10"]["form_rel"] == 0.0

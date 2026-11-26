@@ -51,3 +51,20 @@ def test_ties_produce_one_point():
 def test_empty_candidates_count_as_abstention():
     m = decision_metrics(["A", None], [[], []], threshold=0.0)
     assert m["n_abstained"] == 2 and m["abstain_recall"] == 1.0
+
+
+def test_wilson_threshold_rule_is_stricter():
+    from dmb.metrics import pick_threshold, wilson
+
+    # 30 accepts at 100% precision, then precision decays as the threshold goes down
+    curve = [
+        {"threshold": 0.9, "n_accepted": 30, "precision": 1.0, "recall": 0.1},
+        {"threshold": 0.8, "n_accepted": 400, "precision": 0.98, "recall": 0.4},
+        {"threshold": 0.7, "n_accepted": 1000, "precision": 0.955, "recall": 0.8},
+    ]
+    assert pick_threshold(curve, 0.95, "point")["threshold"] == 0.7
+    # 955/1000 has a Wilson lower bound under 0.95; 392/400 is above it
+    assert wilson(955, 1000)[0] < 0.95 < wilson(392, 400)[0]
+    assert pick_threshold(curve, 0.95, "wilson")["threshold"] == 0.8
+    # 30/30 alone is not enough evidence: lower bound ~0.89
+    assert pick_threshold(curve[:1], 0.95, "wilson") is None

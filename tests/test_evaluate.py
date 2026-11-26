@@ -176,3 +176,14 @@ def test_extra_test_split_has_its_own_once_per_matcher_guard(tmp_path):
         evaluate(p, "dummy", "test2", **QUIET)  # needs --final
     with pytest.raises(ValueError):
         evaluate(p, "dummy", "holdout", **QUIET)
+
+
+def test_threshold_rule_is_part_of_the_label(built_root):
+    p = Paths(built_root)
+    run = evaluate(p, "rules", "dev", params={"stage": "4"}, threshold_rule="wilson", **QUIET)
+    m = read_json(run / "metrics.json")
+    assert run.name.endswith("_rules-stage4@wilson_dev") and m["threshold_rule"] == "wilson"
+    test = evaluate(
+        p, "rules", "test", final=True, params={"stage": "4"}, threshold_rule="wilson", **QUIET
+    )
+    assert read_json(test / "metrics.json")["thresholds_from"] == run.name

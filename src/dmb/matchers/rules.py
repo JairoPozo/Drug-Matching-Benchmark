@@ -86,14 +86,38 @@ def _fold(group: str) -> int:
 class RulesMatcher(Matcher):
     name = "rules"
 
-    def __init__(self, stage: int | str = STAGES[-1]):
+    def __init__(
+        self,
+        stage: int | str = STAGES[-1],
+        drop: str = "",
+        filter_forms: int | str = 1,
+        conversions: int | str = 1,
+    ):
+        """drop: comma-separated FEATURES left out of the stage 5 model (ablation).
+        filter_forms=0 keeps candidates with an incompatible dose form (ablation of stage 3's
+        filter; the form features stay). conversions=0 turns off stage 4's conversions."""
         self.stage = int(stage)
         if self.stage not in STAGES:
             raise ValueError(f"stage must be one of {STAGES}")
+        self.drop = tuple(sorted(f for f in str(drop).split(",") if f))
+        unknown = set(self.drop) - set(FEATURES)
+        if unknown:
+            raise ValueError(f"unknown features to drop: {sorted(unknown)}")
+        self.filter_forms = int(filter_forms)
+        self.conversions = int(conversions)
+        self.features = tuple(f for f in FEATURES if f not in self.drop)
 
     @property
     def params(self) -> dict:
-        return {"stage": self.stage}
+        """Only non-default settings besides the stage, so the base labels stay the same."""
+        out: dict = {"stage": self.stage}
+        if self.drop:
+            out["drop"] = "+".join(self.drop)
+        if not self.filter_forms:
+            out["filter_forms"] = 0
+        if not self.conversions:
+            out["conversions"] = 0
+        return out
 
     # ----- index ---------------------------------------------------------------------------
     def fit(
@@ -125,14 +149,14 @@ class RulesMatcher(Matcher):
         self.training_summary: dict = {}
         needs_train = (
             (self.stage >= 3 and form_model is None)
-            or (self.stage >= 4 and factors is None)
+            or (self.stage >= 4 and self.conversions and factors is None)
             or self.stage >= 5
         )
         if needs_train and train is None:
             train = self._train_rows(paths)
         if self.stage >= 3:
             self.form_model = form_model or self._learn_forms(train)
-        if self.stage >= 4:
+        if self.stage >= 4 and self.conversions:
             self.factors = factors if factors is not None else self._learn_factors(train)
         if self.stage >= 5:
             self.model = self._fit_model(train)
@@ -169,46 +193,60 @@ class RulesMatcher(Matcher):
                 observations.setdefault((key, *kinds), []).append(rxn.value / ndc.value)
         return learn_factors(observations)
 
-    def _fit_model(self, train: pl.DataFrame):
-        """Cross-fitted logistic regression on candidate features (see module docstring)."""
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import StandardScaler
+    def oof_examples(self, train: pl.DataFrame) -> list[tuple[int, str, dict, int]]:
+        """Cross-fitted training examples: (train row, candidate, features, right or not).
 
+        The features of each fold come from form and conversion tables learned on the other
+        folds (folds by group); in SIMULATED_NIL of the rows the right concept is hidden.
+        """
         rows = train.select("query_text", "gold_rxcui", "group_key").rows()
         folds = [_fold(g) for _, _, g in rows]
         rng = random.Random(SEED)
         hide = [rng.random() < SIMULATED_NIL for _ in rows]
         full_forms, full_factors = self.form_model, self.factors
-        X, y = [], []
+        out = []
         try:
             for k in range(N_FOLDS):
                 others = train.filter(pl.Series([f != k for f in folds]))
-                self.form_model = self._learn_forms(others)
-                self.factors = self._learn_factors(others)
-                for (text, gold, _), f, hidden in zip(rows, folds, hide, strict=True):
+                if self.form_model is not None:
+                    self.form_model = self._learn_forms(others)
+                if self.factors:
+                    self.factors = self._learn_factors(others)
+                for i, ((text, gold, _), f, hidden) in enumerate(
+                    zip(rows, folds, hide, strict=True)
+                ):
                     if f != k:
                         continue
                     for rxcui, feats in self._candidate_features(
                         text, hidden=gold if hidden else None
                     ):
-                        X.append([feats[n] for n in FEATURES])
-                        y.append(int(rxcui == gold))
+                        out.append((i, rxcui, feats, int(rxcui == gold)))
         finally:
             self.form_model, self.factors = full_forms, full_factors
+        return out
+
+    def _fit_model(self, train: pl.DataFrame):
+        """Logistic regression on cross-fitted candidate features (see module docstring)."""
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import StandardScaler
+
+        examples = self.oof_examples(train)
+        y = [label for *_, label in examples]
         self.training_summary = {
-            "queries": len(rows),
+            "queries": train.height,
             "candidate_rows": len(y),
             "positives": int(sum(y)),
             "folds": N_FOLDS,
             "simulated_nil_share": SIMULATED_NIL,
+            "features": list(self.features),
         }
         if not y or min(y) == max(y):
             return None  # nothing to learn: fall back to the heuristic score
-        X = np.asarray(X, dtype=float)
+        X = np.asarray([[f[n] for n in self.features] for _, _, f, _ in examples], dtype=float)
         scaler = StandardScaler().fit(X)
         model = LogisticRegression(max_iter=2000).fit(scaler.transform(X), np.asarray(y))
         self.training_summary["coefficients"] = dict(
-            zip(FEATURES, (round(float(c), 3) for c in model.coef_[0]), strict=True)
+            zip(self.features, (round(float(c), 3) for c in model.coef_[0]), strict=True)
         )
         return scaler, model
 
@@ -243,7 +281,7 @@ class RulesMatcher(Matcher):
             return 0.0
         if rxn.matches(ndc):
             return 1.0
-        if self.stage >= 4 and converted_match(key, ndc, rxn, self.factors):
+        if self.stage >= 4 and self.conversions and converted_match(key, ndc, rxn, self.factors):
             return _CONVERTED
         return 0.0
 
@@ -267,7 +305,10 @@ class RulesMatcher(Matcher):
         form_p: dict[str, float | None] = {}
         if self.form_model is not None:
             form_p = self.form_model.scores(query, {e.dose_form for e in entries if e.dose_form})
-            entries = [e for e in entries if not e.dose_form or form_p.get(e.dose_form) is not None]
+            if self.filter_forms:
+                entries = [
+                    e for e in entries if not e.dose_form or form_p.get(e.dose_form) is not None
+                ]
             if not entries:
                 return []  # no compatible dose form: abstain
         known = [p for p in form_p.values() if p is not None]
@@ -319,7 +360,7 @@ class RulesMatcher(Matcher):
             return []
         if self.stage >= 5 and self.model is not None:
             scaler, model = self.model
-            X = np.asarray([[f[n] for n in FEATURES] for _, f in feats], dtype=float)
+            X = np.asarray([[f[n] for n in self.features] for _, f in feats], dtype=float)
             probs = model.predict_proba(scaler.transform(X))[:, 1]
             scored = [(r, float(p)) for (r, _), p in zip(feats, probs, strict=True)]
         else:

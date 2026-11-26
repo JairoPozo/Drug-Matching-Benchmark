@@ -1,0 +1,104 @@
+{
+  "name": "no-form-filter",
+  "params": {
+    "filter_forms": "0"
+  },
+  "rows": {
+    "stage4 heuristic (no model)": {
+      "accuracy@1": 0.8589531680440772,
+      "recall@5": 0.9388429752066115,
+      "ece": 0.09731898409735429,
+      "brier": 0.11988482214671731,
+      "point": {
+        "threshold": 0.992134831460674,
+        "coverage": 0.52,
+        "precision": 0.95,
+        "precision_ci95": [
+          0.9350189222982297,
+          0.9616688510191012
+        ],
+        "accepted": 1040,
+        "false_accepts": 52,
+        "nil_accepted": 12,
+        "far_nil": 0.06486486486486487
+      },
+      "wilson": {
+        "threshold": 0.9970873786407766,
+        "coverage": 0.38,
+        "precision": 0.9657894736842105,
+        "precision_ci95": [
+          0.9503450708081307,
+          0.9765486726067345
+        ],
+        "accepted": 760,
+        "false_accepts": 26,
+        "nil_accepted": 4,
+        "far_nil": 0.021621621621621623
+      }
+    },
+    "lr: all features": {
+      "accuracy@1": 0.859504132231405,
+      "recall@5": 0.9410468319559229,
+      "ece": 0.02909706271448181,
+      "brier": 0.09126289616099714,
+      "point": {
+        "threshold": 0.8319978925079694,
+        "coverage": 0.6755,
+        "precision": 0.9504071058475203,
+        "precision_ci95": [
+          0.9374991720763359,
+          0.9607608163975934
+        ],
+        "accepted": 1351,
+        "false_accepts": 67,
+        "nil_accepted": 29,
+        "far_nil": 0.15675675675675677
+      },
+      "wilson": {
+        "threshold": 0.8767019343701448,
+        "coverage": 0.6365,
+        "precision": 0.9622937941869599,
+        "precision_ci95": [
+          0.9503623787380834,
+          0.971443427087792
+        ],
+        "accepted": 1273,
+        "false_accepts": 48,
+        "nil_accepted": 21,
+        "far_nil": 0.11351351351351352
+      }
+    },
+    "gb: all features": {
+      "accuracy@1": 0.8732782369146006,
+      "recall@5": 0.9460055096418732,
+      "ece": 0.01797195255956279,
+      "brier": 0.07526023509180657,
+      "point": {
+        "threshold": 0.7613798183299244,
+        "coverage": 0.7375,
+        "precision": 0.9511864406779661,
+        "precision_ci95": [
+          0.9389695992211947,
+          0.9610591800611842
+        ],
+        "accepted": 1475,
+        "false_accepts": 72,
+        "nil_accepted": 27,
+        "far_nil": 0.14594594594594595
+      },
+      "wilson": {
+        "threshold": 0.8014855319576579,
+        "coverage": 0.7085,
+        "precision": 0.9618913196894848,
+        "precision_ci95": [
+          0.9506090694756547,
+          0.970675892901573
+        ],
+        "accepted": 1417,
+        "false_accepts": 54,
+        "nil_accepted": 26,
+        "far_nil": 0.14054054054054055
+      }
+    }
+  }
+}

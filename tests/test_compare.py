@@ -63,3 +63,15 @@ def test_band_transitions():
     assert t["newly_accepted"] == 2 and t["newly_accepted_right"] == 1
     assert t["no_longer_accepted"] == 1
     assert t["moves"]["review->accept"] == 2 and t["moves"]["accept->review"] == 1
+
+
+def test_dev_experiment_cache_reproduces_and_ablates(built_root):
+    from dmb.experiments import run
+
+    p = Paths(built_root)
+    report = run(p, "base", {}, ablate=True, scorers=["lr", "gb"], **QUIET)
+    rows = report["rows"]
+    assert "lr: all features" in rows and "gb: all features" in rows
+    assert "lr: without heuristic_gap" in rows and "stage4 heuristic (no model)" in rows
+    assert (p.root / "results" / "v0.2.0" / "dev_experiments" / "base.json").exists()
+    assert not list(p.reports.glob("*_test*"))  # experiments never touch a test split

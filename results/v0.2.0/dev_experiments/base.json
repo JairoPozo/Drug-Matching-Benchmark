@@ -1,0 +1,518 @@
+{
+  "name": "base",
+  "params": {},
+  "rows": {
+    "stage4 heuristic (no model)": {
+      "accuracy@1": 0.856198347107438,
+      "recall@5": 0.9322314049586777,
+      "ece": 0.08664306874705406,
+      "brier": 0.11549348836709289,
+      "point": {
+        "threshold": 0.992134831460674,
+        "coverage": 0.52,
+        "precision": 0.95,
+        "precision_ci95": [
+          0.9350189222982297,
+          0.9616688510191012
+        ],
+        "accepted": 1040,
+        "false_accepts": 52,
+        "nil_accepted": 12,
+        "far_nil": 0.06486486486486487
+      },
+      "wilson": {
+        "threshold": 0.9970873786407766,
+        "coverage": 0.38,
+        "precision": 0.9657894736842105,
+        "precision_ci95": [
+          0.9503450708081307,
+          0.9765486726067345
+        ],
+        "accepted": 760,
+        "false_accepts": 26,
+        "nil_accepted": 4,
+        "far_nil": 0.021621621621621623
+      }
+    },
+    "lr: all features": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.020845128576286363,
+      "brier": 0.09014517667192802,
+      "point": {
+        "threshold": 0.7512962554804267,
+        "coverage": 0.682,
+        "precision": 0.9516129032258065,
+        "precision_ci95": [
+          0.9389021263398775,
+          0.9617869592969389
+        ],
+        "accepted": 1364,
+        "false_accepts": 66,
+        "nil_accepted": 26,
+        "far_nil": 0.14054054054054055
+      },
+      "wilson": {
+        "threshold": 0.8285121963002304,
+        "coverage": 0.647,
+        "precision": 0.9621329211746522,
+        "precision_ci95": [
+          0.9502906130608207,
+          0.9712394103257002
+        ],
+        "accepted": 1294,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "gb: all features": {
+      "accuracy@1": 0.8699724517906336,
+      "recall@5": 0.9410468319559229,
+      "ece": 0.021564460947753963,
+      "brier": 0.07231913042255403,
+      "point": {
+        "threshold": 0.7127946244220227,
+        "coverage": 0.7495,
+        "precision": 0.9506337558372249,
+        "precision_ci95": [
+          0.938468728087772,
+          0.9604949418026544
+        ],
+        "accepted": 1499,
+        "false_accepts": 74,
+        "nil_accepted": 32,
+        "far_nil": 0.17297297297297298
+      },
+      "wilson": {
+        "threshold": 0.776970589278729,
+        "coverage": 0.7235,
+        "precision": 0.9619903248099516,
+        "precision_ci95": [
+          0.9508516748805279,
+          0.9706824195374982
+        ],
+        "accepted": 1447,
+        "false_accepts": 55,
+        "nil_accepted": 28,
+        "far_nil": 0.15135135135135136
+      }
+    },
+    "lr: heuristic only (calibrated stage 4)": {
+      "accuracy@1": 0.856198347107438,
+      "recall@5": 0.9322314049586777,
+      "ece": 0.14629607428469776,
+      "brier": 0.1354897257148917,
+      "point": {
+        "threshold": 0.7964386126443317,
+        "coverage": 0.52,
+        "precision": 0.95,
+        "precision_ci95": [
+          0.9350189222982297,
+          0.9616688510191012
+        ],
+        "accepted": 1040,
+        "false_accepts": 52,
+        "nil_accepted": 12,
+        "far_nil": 0.06486486486486487
+      },
+      "wilson": {
+        "threshold": 0.8045233032904368,
+        "coverage": 0.38,
+        "precision": 0.9657894736842105,
+        "precision_ci95": [
+          0.9503450708081307,
+          0.9765486726067345
+        ],
+        "accepted": 760,
+        "false_accepts": 26,
+        "nil_accepted": 4,
+        "far_nil": 0.021621621621621623
+      }
+    },
+    "lr: without full": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.019548772187698394,
+      "brier": 0.09018611969106409,
+      "point": {
+        "threshold": 0.7486370014710946,
+        "coverage": 0.684,
+        "precision": 0.9510233918128655,
+        "precision_ci95": [
+          0.9382700203458719,
+          0.9612507406516079
+        ],
+        "accepted": 1368,
+        "false_accepts": 67,
+        "nil_accepted": 26,
+        "far_nil": 0.14054054054054055
+      },
+      "wilson": {
+        "threshold": 0.8285983842483372,
+        "coverage": 0.646,
+        "precision": 0.9628482972136223,
+        "precision_ci95": [
+          0.9510872487379829,
+          0.9718650627173677
+        ],
+        "accepted": 1292,
+        "false_accepts": 48,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without frac": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.020230126118578017,
+      "brier": 0.09010516067072633,
+      "point": {
+        "threshold": 0.748942451955424,
+        "coverage": 0.6845,
+        "precision": 0.9503287070854638,
+        "precision_ci95": [
+          0.9375066264047176,
+          0.960630492983273
+        ],
+        "accepted": 1369,
+        "false_accepts": 68,
+        "nil_accepted": 27,
+        "far_nil": 0.14594594594594595
+      },
+      "wilson": {
+        "threshold": 0.8282416114820534,
+        "coverage": 0.647,
+        "precision": 0.9621329211746522,
+        "precision_ci95": [
+          0.9502906130608207,
+          0.9712394103257002
+        ],
+        "accepted": 1294,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without converted": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.02147262051360267,
+      "brier": 0.09016271698726859,
+      "point": {
+        "threshold": 0.7495406682003948,
+        "coverage": 0.6835,
+        "precision": 0.950256035113387,
+        "precision_ci95": [
+          0.9374158874544569,
+          0.9605726182926695
+        ],
+        "accepted": 1367,
+        "false_accepts": 68,
+        "nil_accepted": 26,
+        "far_nil": 0.14054054054054055
+      },
+      "wilson": {
+        "threshold": 0.8289680452922122,
+        "coverage": 0.647,
+        "precision": 0.9621329211746522,
+        "precision_ci95": [
+          0.9502906130608207,
+          0.9712394103257002
+        ],
+        "accepted": 1294,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without form_rel": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.01972029796022921,
+      "brier": 0.09007239493723546,
+      "point": {
+        "threshold": 0.7500691247068116,
+        "coverage": 0.6845,
+        "precision": 0.9503287070854638,
+        "precision_ci95": [
+          0.9375066264047176,
+          0.960630492983273
+        ],
+        "accepted": 1369,
+        "false_accepts": 68,
+        "nil_accepted": 27,
+        "far_nil": 0.14594594594594595
+      },
+      "wilson": {
+        "threshold": 0.82766312557296,
+        "coverage": 0.6475,
+        "precision": 0.9621621621621622,
+        "precision_ci95": [
+          0.9503287292850454,
+          0.9712617094566766
+        ],
+        "accepted": 1295,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without form_logp": {
+      "accuracy@1": 0.856198347107438,
+      "recall@5": 0.9322314049586777,
+      "ece": 0.03212966878979226,
+      "brier": 0.09080330087879947,
+      "point": {
+        "threshold": 0.786342750359521,
+        "coverage": 0.678,
+        "precision": 0.9528023598820059,
+        "precision_ci95": [
+          0.9401795363397667,
+          0.9628668184709701
+        ],
+        "accepted": 1356,
+        "false_accepts": 64,
+        "nil_accepted": 26,
+        "far_nil": 0.14054054054054055
+      },
+      "wilson": {
+        "threshold": 0.815689553606325,
+        "coverage": 0.6625,
+        "precision": 0.9622641509433962,
+        "precision_ci95": [
+          0.9505952393502303,
+          0.9712603076163909
+        ],
+        "accepted": 1325,
+        "false_accepts": 50,
+        "nil_accepted": 21,
+        "far_nil": 0.11351351351351352
+      }
+    },
+    "lr: without form_unseen": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.02138492637264749,
+      "brier": 0.09004619953245069,
+      "point": {
+        "threshold": 0.7508935499390709,
+        "coverage": 0.6825,
+        "precision": 0.9516483516483516,
+        "precision_ci95": [
+          0.9389465513137619,
+          0.9618150853869344
+        ],
+        "accepted": 1365,
+        "false_accepts": 66,
+        "nil_accepted": 25,
+        "far_nil": 0.13513513513513514
+      },
+      "wilson": {
+        "threshold": 0.828588847953984,
+        "coverage": 0.647,
+        "precision": 0.9621329211746522,
+        "precision_ci95": [
+          0.9502906130608207,
+          0.9712394103257002
+        ],
+        "accepted": 1294,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without sim": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.026374983435769765,
+      "brier": 0.09014491862723885,
+      "point": {
+        "threshold": 0.7486549929984885,
+        "coverage": 0.682,
+        "precision": 0.9508797653958945,
+        "precision_ci95": [
+          0.9380903597296123,
+          0.9611365683006509
+        ],
+        "accepted": 1364,
+        "false_accepts": 67,
+        "nil_accepted": 27,
+        "far_nil": 0.14594594594594595
+      },
+      "wilson": {
+        "threshold": 0.8364662536683392,
+        "coverage": 0.638,
+        "precision": 0.9639498432601881,
+        "precision_ci95": [
+          0.9522496076426262,
+          0.9728648752746348
+        ],
+        "accepted": 1276,
+        "false_accepts": 46,
+        "nil_accepted": 21,
+        "far_nil": 0.11351351351351352
+      }
+    },
+    "lr: without log_candidates": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.030682545701759795,
+      "brier": 0.09280698599645941,
+      "point": {
+        "threshold": 0.7874549477201207,
+        "coverage": 0.6735,
+        "precision": 0.9510022271714922,
+        "precision_ci95": [
+          0.9381368872943442,
+          0.9613023955941898
+        ],
+        "accepted": 1347,
+        "false_accepts": 66,
+        "nil_accepted": 29,
+        "far_nil": 0.15675675675675677
+      },
+      "wilson": {
+        "threshold": 0.8583165630865707,
+        "coverage": 0.6325,
+        "precision": 0.9620553359683794,
+        "precision_ci95": [
+          0.9500507028710236,
+          0.9712620914131486
+        ],
+        "accepted": 1265,
+        "false_accepts": 48,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without n_ingredients": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.02375277545144891,
+      "brier": 0.09013538045561696,
+      "point": {
+        "threshold": 0.7490529922937309,
+        "coverage": 0.6825,
+        "precision": 0.9501831501831501,
+        "precision_ci95": [
+          0.9373248846455208,
+          0.9605145731851003
+        ],
+        "accepted": 1365,
+        "false_accepts": 68,
+        "nil_accepted": 28,
+        "far_nil": 0.15135135135135136
+      },
+      "wilson": {
+        "threshold": 0.8288150944533605,
+        "coverage": 0.647,
+        "precision": 0.9621329211746522,
+        "precision_ci95": [
+          0.9502906130608207,
+          0.9712394103257002
+        ],
+        "accepted": 1294,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without heuristic": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.022280470226788668,
+      "brier": 0.09015322452753946,
+      "point": {
+        "threshold": 0.7488285173851748,
+        "coverage": 0.683,
+        "precision": 0.9509516837481699,
+        "precision_ci95": [
+          0.9381803205573971,
+          0.9611937384578935
+        ],
+        "accepted": 1366,
+        "false_accepts": 67,
+        "nil_accepted": 26,
+        "far_nil": 0.14054054054054055
+      },
+      "wilson": {
+        "threshold": 0.828513285810394,
+        "coverage": 0.647,
+        "precision": 0.9621329211746522,
+        "precision_ci95": [
+          0.9502906130608207,
+          0.9712394103257002
+        ],
+        "accepted": 1294,
+        "false_accepts": 49,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    },
+    "lr: without heuristic_gap": {
+      "accuracy@1": 0.856198347107438,
+      "recall@5": 0.9360881542699725,
+      "ece": 0.03551675933640245,
+      "brier": 0.09821568646908607,
+      "point": {
+        "threshold": 0.8610694410186402,
+        "coverage": 0.667,
+        "precision": 0.9505247376311844,
+        "precision_ci95": [
+          0.9375386466581539,
+          0.960923473222107
+        ],
+        "accepted": 1334,
+        "false_accepts": 66,
+        "nil_accepted": 13,
+        "far_nil": 0.07027027027027027
+      },
+      "wilson": {
+        "threshold": 0.9061302437276876,
+        "coverage": 0.558,
+        "precision": 0.9632616487455197,
+        "precision_ci95": [
+          0.9505402392362327,
+          0.972804633824386
+        ],
+        "accepted": 1116,
+        "false_accepts": 41,
+        "nil_accepted": 8,
+        "far_nil": 0.043243243243243246
+      }
+    },
+    "lr: without is_top": {
+      "accuracy@1": 0.8567493112947658,
+      "recall@5": 0.9333333333333333,
+      "ece": 0.06243523103178545,
+      "brier": 0.09715758255716549,
+      "point": {
+        "threshold": 0.6556651386016458,
+        "coverage": 0.6765,
+        "precision": 0.950480413895048,
+        "precision_ci95": [
+          0.9375908577724854,
+          0.9608190966392895
+        ],
+        "accepted": 1353,
+        "false_accepts": 67,
+        "nil_accepted": 29,
+        "far_nil": 0.15675675675675677
+      },
+      "wilson": {
+        "threshold": 0.7928054009634765,
+        "coverage": 0.641,
+        "precision": 0.9633385335413417,
+        "precision_ci95": [
+          0.9515893618055056,
+          0.9723191507204543
+        ],
+        "accepted": 1282,
+        "false_accepts": 47,
+        "nil_accepted": 23,
+        "far_nil": 0.12432432432432433
+      }
+    }
+  }
+}
