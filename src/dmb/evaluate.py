@@ -171,6 +171,7 @@ def evaluate(
     catalog = pl.read_parquet(paths.processed / "catalog.parquet")
 
     matcher.paths = paths
+    matcher.split = split
     log(f"[eval] matcher={label} split={split} queries={df.height:,} catalog={catalog.height:,}")
     t0 = time.perf_counter()
     matcher.fit(catalog)

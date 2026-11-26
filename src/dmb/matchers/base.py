@@ -18,6 +18,9 @@ class Matcher(ABC):
     name: ClassVar[str]
     # Set by the evaluator before fit(): where the allowed resources (RxNorm files) live.
     paths: Paths | None = None
+    # Set by the evaluator before fit(): the split being evaluated (read only by matchers that use
+    # cached external output, such as rxnav).
+    split: str | None = None
 
     @property
     def params(self) -> dict:

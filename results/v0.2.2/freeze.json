@@ -1,0 +1,102 @@
+{
+  "version": "v0.2.2",
+  "created_at": "2026-11-26T14:21:15+00:00",
+  "query_format": "v0.3",
+  "split_method": "grouped-stratified-v1",
+  "matchers": {
+    "rules-stage5@wilson": {
+      "dev_run": "20261126-000436_rules-stage5@wilson_dev",
+      "t_accept_95": 0.8285121963072183,
+      "t_best_f1": 0.3589752095731423,
+      "t_abstain": 0.011780086330219203,
+      "coefficients": {
+        "full": 0.689,
+        "frac": 0.263,
+        "converted": 0.001,
+        "form_rel": -1.097,
+        "form_logp": 1.859,
+        "form_unseen": -0.01,
+        "sim": -0.056,
+        "log_candidates": -0.252,
+        "n_ingredients": 0.016,
+        "heuristic": 0.018,
+        "heuristic_gap": 1.973,
+        "is_top": 0.68
+      }
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+      "dev_run": "20261126-001627_rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson_dev",
+      "t_accept_95": 0.7895487612326103,
+      "t_best_f1": 0.48557513460603113,
+      "t_abstain": 0.05251598616402681,
+      "coefficients": null
+    },
+    "rxnav-inputshort-scorecal": {
+      "dev_run": "20261126-141816_rxnav-inputshort-scorecal_dev",
+      "t_accept_95": 0.9822570357505478,
+      "t_best_f1": 0.4481102651919482,
+      "t_abstain": 0.41235227994348195,
+      "coefficients": {
+        "scaled_score": 1.372,
+        "gap_to_second": 3.423,
+        "log_candidates": -0.46,
+        "intercept": 1.07
+      }
+    },
+    "rxnav-inputshort-scorecal@wilson": {
+      "dev_run": "20261126-141801_rxnav-inputshort-scorecal@wilson_dev",
+      "t_accept_95": null,
+      "t_best_f1": 0.4481102651919482,
+      "t_abstain": 0.41235227994348195,
+      "coefficients": {
+        "scaled_score": 1.372,
+        "gap_to_second": 3.423,
+        "log_candidates": -0.46,
+        "intercept": 1.07
+      }
+    },
+    "rxnav-inputshort-scorecal@ltt": {
+      "dev_run": "20261126-141818_rxnav-inputshort-scorecal@ltt_dev",
+      "t_accept_95": null,
+      "t_best_f1": 0.4481102651919482,
+      "t_abstain": 0.41235227994348195,
+      "coefficients": {
+        "scaled_score": 1.372,
+        "gap_to_second": 3.423,
+        "log_candidates": -0.46,
+        "intercept": 1.07
+      }
+    },
+    "rxnav-inputshort-scorecal@sgr": {
+      "dev_run": "20261126-141819_rxnav-inputshort-scorecal@sgr_dev",
+      "t_accept_95": null,
+      "t_best_f1": 0.4481102651919482,
+      "t_abstain": 0.41235227994348195,
+      "coefficients": {
+        "scaled_score": 1.372,
+        "gap_to_second": 3.423,
+        "log_candidates": -0.46,
+        "intercept": 1.07
+      }
+    }
+  },
+  "files_sha256": {
+    "splits/dev.txt": "6d6bc24365035860f2bbe46c642b6057389d7166a4c53dc814fc78f508a3faf7",
+    "splits/test.txt": "87a254898939bc4966a6c3c83f99db95a759466ab1a880afa7f6c252ab90e6fc",
+    "splits/test2.txt": "2057ebdc9fdeb7cdca0b649c993cc80310bdb8fea2bc58ea15c7474c161ae5c6",
+    "splits/train.txt": "8d3f16d4aa3a6a12430c1d29ff14336c545ea3ada971a79ce500f05ef62d5a5c",
+    "splits/meta.json": "d96dd7852a1a1d6643314de9824225ecf8a2c2460d1d0f992d6b00cd5edb3922",
+    "data/processed/catalog.parquet": "ade4cab09989f06321550b53b60aa63f1ca7495d228917d13b06cc5c027f2134",
+    "data/processed/catalog_heldout.parquet": "95d5937a84dd4fa05218c9fd0ab2776233a455d8086bcc7d76ff885b9d0b7d9b",
+    "data/processed/dev.parquet": "3f1eae045951a5116c02bb5eea88b27bdda1bc8bc729df4f4c5bd0a92d5f689d",
+    "data/processed/exclusions.parquet": "60d09513f83761311241baddccf7a13c7f6e36ff2d980b57ab33b797004d28bf",
+    "data/processed/labels.parquet": "3f09d9cafc38d6f585737dacf2e1e062ea166f2a72f039b0e1489fd1eb917f11",
+    "data/processed/queries.parquet": "45e2527c7b08fa9999396047ecb5f2ec7fb746adfe88b60ce3984373465c1c98",
+    "data/processed/test.parquet": "545dd234f8c83c58fbd0220d5dd5351331c93651210202ecaf056be9e48f8fff",
+    "data/processed/test2.parquet": "b100501d44452466f83fe650afe220271fc8acba89736cb199849d7692fe9b61",
+    "data/processed/train.parquet": "ebe156c1d25db67ab72abd72f80ffaba4141236a4307f3dd74e31bed23bdb5d6",
+    "data/processed/build_stats.json": "ae1a0c03c4811b1eef1cd7ebfe87887a52d10345afe1a2d0cbb4a86f1fa4f4dc",
+    "data/raw/manifest.json": "4240c48ac437a4dc74609db020a25274de5e4828e0254ca8882458c381a6f7a8",
+    "sources.json": "bba97f6d632eaba8c8d02442c45a3ea42a78eb4e357dfbc0d569472e9a6f62cd"
+  }
+}
