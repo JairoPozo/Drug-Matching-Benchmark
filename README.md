@@ -42,6 +42,25 @@ Output: `(product, concept, confidence)`.
 >   intervals are reported.
 > - Because `test2` left train, train now has 30,375 products: the v0.1.0 numbers below reproduce
 >   from tag `v0.1.0`.
+>
+> **v0.2.1: threshold rules with a formal guarantee.** Two rules with a finite-sample guarantee,
+> Learn then Test (`ltt`) and selection with guaranteed risk (`sgr`), both at δ = 0.05, against the
+> Wilson rule. Pre-registered in `results/v0.2.1/plan.md`, evaluated once from tag
+> `v0.2.1-pretest`, all hypotheses in `results/v0.2.1/resultados.md` (Spanish). In 1,000
+> calibration samples of 2,000 drawn from the 4,000 dev and test2 products:
+>
+> | Threshold rule | Misses the 95% target (LR / GB) | Mean coverage (LR / GB) |
+> |---|---:|---:|
+> | Observed precision (v0.1.0) | 50.3% / 48.7% | 67.8% / 74.0% |
+> | Wilson lower bound (v0.2.0) | 1.5% / 1.5% | 64.3% / 70.2% |
+> | Learn then Test, δ = 0.05 | 2.9% / 3.9% | 64.8% / 70.8% |
+> | Selection with guaranteed risk, δ = 0.05 | 0.4% / 0.2% | 62.4% / 68.4% |
+>
+> - The Wilson rule has no formal guarantee but misses the target about as often as Learn then
+>   Test at δ = 0.025. Learn then Test gives the guarantee with half a point more coverage.
+> - On test2, with the thresholds fixed on dev, the guaranteed rules meet 95% in 3 of 4 cases.
+>   Gradient boosting with `ltt` gets 94.85%: it accepts 5 more products than Wilson, 3 of them
+>   wrong, as the plan anticipated. The guarantee is about the population, not each sample.
 
 ## Results (test split, v0.1.0)
 
@@ -205,7 +224,9 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ├── splits/               # frozen dev/test IDs + derived train IDs (committed)
 ├── results/v0.1.0/       # freeze (dev thresholds, coefficients, data hashes) + test results
 ├── results/v0.2.0/       # pre-registration, dev experiments, freeze, test2 results and analysis
-├── scripts/              # one-off analyses (test2_analysis.py, test_secondary.py)
+├── results/v0.2.1/       # threshold rules with a formal guarantee: plan, freeze, test2, resampling
+├── scripts/              # one-off analyses (test2_analysis.py, test_secondary.py,
+│                         #   pharmacist_review.py, threshold_resampling.py)
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/
@@ -217,7 +238,7 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 │   ├── strength.py       # strength normalization and learned conversion factors
 │   ├── forms.py          # dose form compatibility table learned from train
 │   ├── matchers/         # base interface, dummy, rules (stages 1-5)
-│   ├── metrics.py        # ranking, decisions, calibration, bands
+│   ├── metrics.py        # ranking, decisions, calibration, bands, threshold rules
 │   ├── evaluate.py       # metrics.json, pr_curve, calibration.csv, predictions.parquet
 │   └── compare.py        # dmb freeze / dmb compare (paired tests)
 └── tests/                # synthetic fixtures, no network needed

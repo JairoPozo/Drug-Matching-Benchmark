@@ -1,0 +1,183 @@
+{
+  "split": "test2",
+  "version": "v0.2.1",
+  "checks": [
+    [
+      "data and splits match the freeze",
+      true,
+      []
+    ],
+    [
+      "rules-stage5@wilson used the frozen dev thresholds",
+      true,
+      "20261126-000436_rules-stage5@wilson_dev"
+    ],
+    [
+      "rules-stage5@wilson coefficients equal the frozen ones",
+      true,
+      null
+    ],
+    [
+      "rules-stage5@ltt used the frozen dev thresholds",
+      true,
+      "20261126-022540_rules-stage5@ltt_dev"
+    ],
+    [
+      "rules-stage5@ltt coefficients equal the frozen ones",
+      true,
+      null
+    ],
+    [
+      "rules-stage5@sgr used the frozen dev thresholds",
+      true,
+      "20261126-022142_rules-stage5@sgr_dev"
+    ],
+    [
+      "rules-stage5@sgr coefficients equal the frozen ones",
+      true,
+      null
+    ]
+  ],
+  "matchers": {
+    "rules-stage5@wilson": {
+      "run": "20261126-003634_rules-stage5@wilson_test2",
+      "accuracy@1": 0.8410958904109589,
+      "recall@5": 0.9232876712328767,
+      "ece": 0.01810566331497288,
+      "brier": 0.09163712697686661,
+      "t_accept_95": 0.8285121963072183,
+      "t_abstain": 0.011780086330219203,
+      "n_nil": 175,
+      "nil_accept_rate": 0.10857142857142857,
+      "coverage": 0.646,
+      "accepted": 1292,
+      "accept_precision": 0.9620743034055728,
+      "accept_precision_ci95": [
+        0.9502142048593337,
+        0.9711947080818776
+      ],
+      "false_accepts": 49,
+      "false_accepts_on_nil": 19,
+      "nil_not_accepted": 0.8914285714285715,
+      "review_share": 0.2845,
+      "review_answer_in_top5": 0.9185022026431718,
+      "abstain_share": 0.0695,
+      "abstain_not_in_catalog": 41,
+      "abstain_in_catalog": 98
+    },
+    "rules-stage5@ltt": {
+      "run": "20261126-025847_rules-stage5@ltt_test2",
+      "accuracy@1": 0.8410958904109589,
+      "recall@5": 0.9232876712328767,
+      "ece": 0.01810566331497288,
+      "brier": 0.09163712697686661,
+      "t_accept_95": 0.823,
+      "t_abstain": 0.011780086330219203,
+      "n_nil": 175,
+      "nil_accept_rate": 0.10857142857142857,
+      "coverage": 0.648,
+      "accepted": 1296,
+      "accept_precision": 0.9606481481481481,
+      "accept_precision_ci95": [
+        0.9486294017067624,
+        0.9699440613982805
+      ],
+      "false_accepts": 51,
+      "false_accepts_on_nil": 19,
+      "nil_not_accepted": 0.8914285714285715,
+      "review_share": 0.2825,
+      "review_answer_in_top5": 0.9177777777777778,
+      "abstain_share": 0.0695,
+      "abstain_not_in_catalog": 41,
+      "abstain_in_catalog": 98
+    },
+    "rules-stage5@sgr": {
+      "run": "20261126-025901_rules-stage5@sgr_test2",
+      "accuracy@1": 0.8410958904109589,
+      "recall@5": 0.9232876712328767,
+      "ece": 0.01810566331497288,
+      "brier": 0.09163712697686661,
+      "t_accept_95": 0.8471661682909115,
+      "t_abstain": 0.011780086330219203,
+      "n_nil": 175,
+      "nil_accept_rate": 0.09714285714285714,
+      "coverage": 0.628,
+      "accepted": 1256,
+      "accept_precision": 0.9665605095541401,
+      "accept_precision_ci95": [
+        0.9551088613044261,
+        0.9751668177968196
+      ],
+      "false_accepts": 42,
+      "false_accepts_on_nil": 17,
+      "nil_not_accepted": 0.9028571428571428,
+      "review_share": 0.3025,
+      "review_answer_in_top5": 0.9221311475409836,
+      "abstain_share": 0.0695,
+      "abstain_not_in_catalog": 41,
+      "abstain_in_catalog": 98
+    }
+  },
+  "paired": {
+    "rules-stage5@ltt vs rules-stage5@wilson": {
+      "accuracy@1_diff_ci95": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mcnemar_p_top1": 1.0,
+      "nil_accept_rate_diff_ci95": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mcnemar_p_nil_accepted": 1.0,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 139,
+          "accept->accept": 1292,
+          "review->accept": 4,
+          "review->review": 565
+        },
+        "newly_accepted": 4,
+        "newly_accepted_right": 2,
+        "no_longer_accepted": 0
+      },
+      "coverage_diff_ci95": [
+        0.002,
+        0.0005,
+        0.004
+      ]
+    },
+    "rules-stage5@sgr vs rules-stage5@wilson": {
+      "accuracy@1_diff_ci95": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mcnemar_p_top1": 1.0,
+      "nil_accept_rate_diff_ci95": [
+        -0.011428571428571429,
+        -0.02857142857142857,
+        0.0
+      ],
+      "mcnemar_p_nil_accepted": 0.5,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 139,
+          "accept->accept": 1256,
+          "accept->review": 36,
+          "review->review": 569
+        },
+        "newly_accepted": 0,
+        "newly_accepted_right": 0,
+        "no_longer_accepted": 36
+      },
+      "coverage_diff_ci95": [
+        -0.018,
+        -0.024,
+        -0.0125
+      ]
+    }
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "note": "Plan in results/v0.2.1/plan.md (H7).",
+  "splits": [
+    "dev",
+    "test2"
+  ],
+  "seed": 2026,
+  "repetitions": 1000,
+  "sample_size": 2000,
+  "target_precision": 0.95,
+  "delta": 0.05,
+  "models": {
+    "logistic regression (stage 5)": {
+      "label": "rules-stage5@wilson",
+      "population_size": 4000,
+      "population_not_in_catalog": 360,
+      "population_best": {
+        "threshold": 0.757445893705179,
+        "coverage": 0.68025,
+        "precision": 0.9503858875413451,
+        "nil_accept_rate": 0.1361111111111111
+      },
+      "rules": {
+        "point": {
+          "violation_rate": 0.503,
+          "violation_rate_mc_se": 0.01581110369329099,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.67758925,
+          "coverage_p2.5": 0.64723125,
+          "coverage_p97.5": 0.69975,
+          "precision_mean": 0.9506162336097759,
+          "precision_p2.5": 0.938549481957842,
+          "nil_accept_rate_mean": 0.1353972222222222
+        },
+        "wilson": {
+          "violation_rate": 0.015,
+          "violation_rate_mc_se": 0.003843826218756514,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.64337975,
+          "coverage_p2.5": 0.59465,
+          "coverage_p97.5": 0.67875625,
+          "precision_mean": 0.9619570625511406,
+          "precision_p2.5": 0.951398668825621,
+          "nil_accept_rate_mean": 0.11088333333333333
+        },
+        "ltt": {
+          "violation_rate": 0.029,
+          "violation_rate_mc_se": 0.005306505441436953,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.6484165000000001,
+          "coverage_p2.5": 0.6054875000000001,
+          "coverage_p97.5": 0.68425,
+          "precision_mean": 0.9603824123467056,
+          "precision_p2.5": 0.9495798319327731,
+          "nil_accept_rate_mean": 0.114275
+        },
+        "sgr": {
+          "violation_rate": 0.004,
+          "violation_rate_mc_se": 0.001995995991979944,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.623616,
+          "coverage_p2.5": 0.532125,
+          "coverage_p97.5": 0.6627562499999999,
+          "precision_mean": 0.9659398803545879,
+          "precision_p2.5": 0.9555052790346908,
+          "nil_accept_rate_mean": 0.10003888888888889
+        },
+        "ltt_delta_0.025": {
+          "violation_rate": 0.012,
+          "violation_rate_mc_se": 0.003443254274665175,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.64132175,
+          "coverage_p2.5": 0.57625,
+          "coverage_p97.5": 0.6795,
+          "precision_mean": 0.9621844118408966,
+          "precision_p2.5": 0.9510669610007358,
+          "nil_accept_rate_mean": 0.10996111111111112
+        }
+      },
+      "wilson_vs_ltt_delta_0.025": {
+        "same_accepted_set": 0.53,
+        "wilson_accepts_more": 0.371
+      }
+    },
+    "gradient boosting (v0.2.0)": {
+      "label": "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson",
+      "population_size": 4000,
+      "population_not_in_catalog": 360,
+      "population_best": {
+        "threshold": 0.7527681992639204,
+        "coverage": 0.739,
+        "precision": 0.9506089309878214,
+        "nil_accept_rate": 0.16666666666666666
+      },
+      "rules": {
+        "point": {
+          "violation_rate": 0.487,
+          "violation_rate_mc_se": 0.015806043148112688,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.7400137499999999,
+          "coverage_p2.5": 0.70325,
+          "coverage_p97.5": 0.7720812499999999,
+          "precision_mean": 0.9503321905261057,
+          "precision_p2.5": 0.9390568282503812,
+          "nil_accept_rate_mean": 0.16698888888888885
+        },
+        "wilson": {
+          "violation_rate": 0.015,
+          "violation_rate_mc_se": 0.003843826218756514,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.70219,
+          "coverage_p2.5": 0.6394875,
+          "coverage_p97.5": 0.7375,
+          "precision_mean": 0.9616329426932175,
+          "precision_p2.5": 0.9518154054971157,
+          "nil_accept_rate_mean": 0.12619444444444444
+        },
+        "ltt": {
+          "violation_rate": 0.039,
+          "violation_rate_mc_se": 0.006122009474020765,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.70763075,
+          "coverage_p2.5": 0.64325,
+          "coverage_p97.5": 0.7415,
+          "precision_mean": 0.9601260680259295,
+          "precision_p2.5": 0.9490896830748483,
+          "nil_accept_rate_mean": 0.13248333333333331
+        },
+        "sgr": {
+          "violation_rate": 0.002,
+          "violation_rate_mc_se": 0.0014127986409959489,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.6836764999999999,
+          "coverage_p2.5": 0.626,
+          "coverage_p97.5": 0.72775,
+          "precision_mean": 0.965266216535752,
+          "precision_p2.5": 0.9546547578151838,
+          "nil_accept_rate_mean": 0.11127222222222223
+        },
+        "ltt_delta_0.025": {
+          "violation_rate": 0.015,
+          "violation_rate_mc_se": 0.003843826218756514,
+          "no_threshold_rate": 0.0,
+          "coverage_mean": 0.7005217499999999,
+          "coverage_p2.5": 0.63875,
+          "coverage_p97.5": 0.7385,
+          "precision_mean": 0.9618540817374074,
+          "precision_p2.5": 0.9509140148950576,
+          "nil_accept_rate_mean": 0.12558888888888892
+        }
+      },
+      "wilson_vs_ltt_delta_0.025": {
+        "same_accepted_set": 0.405,
+        "wilson_accepts_more": 0.496
+      }
+    }
+  }
+}
