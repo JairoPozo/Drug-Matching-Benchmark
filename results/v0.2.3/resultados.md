@@ -49,7 +49,7 @@ Con Wilson, la cobertura fue 44,45 % (A) y 40,5 % (B), contra 64,6 %: −20,15 p
   |---|---:|---:|---:|---:|---:|
   | Regresión logística | 100 % | 100 % | 98,8 % | 98,3 % | 97,0 % |
   | Gradient boosting (v0.2.0) | 97,0 % | 98,5 % | 99,3 % | 99,1 % | 97,7 % |
-  | SapBERT A | 99,0 % | 99,0 % | 98,3 % | 96,5 % | 92,7 % |
+  | SapBERT A | 99,0 % | 99,0 % | 98,3 % | 96,5 % | 92,8 % |
   | SapBERT B | 100 % | 100 % | 99,5 % | 97,0 % | 95,3 % |
 
 ## 3. Exploratorio (no pre-registrado como hipótesis)

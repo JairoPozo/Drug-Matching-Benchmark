@@ -14,6 +14,7 @@ Writes results/figures/figure{1,2,3}_{lang}.png (300 dpi) and .pdf.
 
 import argparse
 import json
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 
 import matplotlib
@@ -135,7 +136,9 @@ TEXT = {
 
 
 def pct(x: float, lang: str, digits: int = 1) -> str:
-    s = f"{100 * x:.{digits}f}"
+    # Half-up rounding of the decimal value, as in the results tables (0.2845 -> 28.5%).
+    step = Decimal(1).scaleb(-digits)
+    s = str((Decimal(str(x)) * 100).quantize(step, rounding=ROUND_HALF_UP))
     return s.replace(".", ",") + " %" if lang == "es" else s + "%"
 
 
