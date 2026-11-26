@@ -61,6 +61,14 @@ Output: `(product, concept, confidence)`.
 > - On test2, with the thresholds fixed on dev, the guaranteed rules meet 95% in 3 of 4 cases.
 >   Gradient boosting with `ltt` gets 94.85%: it accepts 5 more products than Wilson, 3 of them
 >   wrong, as the plan anticipated. The guarantee is about the population, not each sample.
+>
+> **v0.2.2: comparison with RxNav**, NLM's public approximate matching for drug names, under the
+> same rules: only RxNorm's own names (label names would give the answer away) and only catalog
+> concepts. Pre-registered in `results/v0.2.2/plan.md`, evaluated once from tag `v0.2.2-pretest`,
+> results in `results/v0.2.2/resultados.md` (Spanish). On test2, RxNav's first candidate is right
+> for 71.0% of the products in the catalog, against 84.1% for the logistic regression (paired
+> difference −13.1 pts, 95% CI −15.1 to −11.1), and no risk-controlled rule finds a threshold at 95%
+> precision: even its most confident 5% of products are 93.0% precise.
 
 ## Results (test split, v0.1.0)
 
@@ -225,8 +233,11 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ├── results/v0.1.0/       # freeze (dev thresholds, coefficients, data hashes) + test results
 ├── results/v0.2.0/       # pre-registration, dev experiments, freeze, test2 results and analysis
 ├── results/v0.2.1/       # threshold rules with a formal guarantee: plan, freeze, test2, resampling
+├── results/v0.2.2/       # RxNav baseline: plan, dev runs, freeze, test2 results
 ├── scripts/              # one-off analyses (test2_analysis.py, test_secondary.py,
-│                         #   pharmacist_review.py, threshold_resampling.py)
+│                         #   pharmacist_review.py, threshold_resampling.py,
+│                         #   precision_at_coverage.py) and the RxNav download
+│                         #   (rxnav_queries.py, rxnav_fetch.py)
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/
@@ -237,9 +248,10 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 │   ├── parse.py          # query text and catalog names -> ingredients, strengths, form, route
 │   ├── strength.py       # strength normalization and learned conversion factors
 │   ├── forms.py          # dose form compatibility table learned from train
-│   ├── matchers/         # base interface, dummy, rules (stages 1-5)
+│   ├── matchers/         # base interface, dummy, rules (stages 1-5), rxnav (cached responses)
 │   ├── metrics.py        # ranking, decisions, calibration, bands, threshold rules
 │   ├── evaluate.py       # metrics.json, pr_curve, calibration.csv, predictions.parquet
+│   ├── rxnav.py          # RxNav queries and cached responses (v0.2.2)
 │   └── compare.py        # dmb freeze / dmb compare (paired tests)
 └── tests/                # synthetic fixtures, no network needed
 ```
