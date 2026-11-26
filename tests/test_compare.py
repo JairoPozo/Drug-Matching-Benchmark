@@ -71,7 +71,54 @@ def test_dev_experiment_cache_reproduces_and_ablates(built_root):
     p = Paths(built_root)
     report = run(p, "base", {}, ablate=True, scorers=["lr", "gb"], **QUIET)
     rows = report["rows"]
-    assert "lr: all features" in rows and "gb: all features" in rows
-    assert "lr: without heuristic_gap" in rows and "stage4 heuristic (no model)" in rows
+    assert {"lr: v1 features", "lr: v2 features", "gb: v1 features", "gb: v2 features"} <= set(rows)
+    assert "lr: v1 without heuristic_gap" in rows and "gb: v2 without quantity_match" in rows
+    assert "stage4 heuristic (no model)" in rows
     assert (p.root / "results" / "v0.2.0" / "dev_experiments" / "base.json").exists()
     assert not list(p.reports.glob("*_test*"))  # experiments never touch a test split
+
+
+def test_selection_rule_maps_rows_to_configs(tmp_path):
+    from dmb.config import write_json
+    from dmb.experiments import RESULTS, _config, select
+
+    assert _config({}, "gb: v2 without sim") == {
+        "stage": 5,
+        "scorer": "gb",
+        "features": "v2",
+        "drop": "sim",
+    }
+    assert _config({"filter_forms": "0"}, "lr: v1 features") == {"stage": 5, "filter_forms": "0"}
+    assert _config({}, "stage4 heuristic (no model)") == {"stage": 4}
+    p = Paths(tmp_path)
+
+    def row(cov, nil):
+        return {"wilson": {"coverage": cov, "nil_accepted": nil, "precision": 0.96}}
+
+    write_json(
+        tmp_path / RESULTS / "a.json",
+        {
+            "params": {},
+            "rows": {
+                "lr: v1 features": row(0.700, 20),
+                "gb: v1 features": row(0.730, 28),  # best coverage
+                "gb: v2 without sim": row(0.727, 25),  # tie (< 0.5 points), fewer NIL: chosen
+                "gb: v2 features": row(0.727, 25),  # same tie and NIL, more features: not chosen
+                "lr: v1 without sim": {"wilson": None},  # never meets the criterion
+            },
+        },
+    )
+    out = select(p, **QUIET)
+    assert out["chosen"]["source"] == "a: gb: v2 without sim"
+    assert out["n_configurations"] == 4
+
+
+def test_selection_fails_when_nothing_meets_wilson(tmp_path):
+    from dmb.config import write_json
+    from dmb.experiments import RESULTS, select
+
+    write_json(
+        tmp_path / RESULTS / "a.json", {"params": {}, "rows": {"lr: v1 features": {"wilson": None}}}
+    )
+    with pytest.raises(RuntimeError):
+        select(Paths(tmp_path), **QUIET)

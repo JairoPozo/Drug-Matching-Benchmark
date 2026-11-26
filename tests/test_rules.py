@@ -324,3 +324,24 @@ def test_filter_forms_off_keeps_incompatible_candidates():
     m.fit(catalog, vocab=vocab, form_model=_form_model())
     feats = dict(m._candidate_features(q))
     assert set(feats) == {"10", "11"} and feats["10"]["form_rel"] == 0.0
+
+
+def test_v2_features_are_opt_in_and_flag_sibling_forms():
+    from dmb.matchers.rules import ALL_FEATURES, FEATURES
+
+    assert RulesMatcher(stage=5).features == FEATURES  # v1 baseline unchanged
+    assert RulesMatcher(stage=5, features="v2").features == ALL_FEATURES
+    assert RulesMatcher(stage=5, features="v2").label == "rules-featuresv2-stage5"
+    vocab = Vocab(
+        name_to_in={"oxycodone hydrochloride": frozenset({"IN5"})},
+        dose_forms=["Oral Tablet"],
+    )
+    catalog = pl.DataFrame(
+        {"rxcui": ["30"], "name": ["Abuse-Deterrent oxycodone hydrochloride 15 MG Oral Tablet"]}
+    )
+    m = RulesMatcher(stage=4, features="v2")  # features are computed the same way at stage 4
+    m.fit(catalog, vocab=vocab, form_model=_form_model(), factors={})
+    ((rxcui, f),) = m._candidate_features(
+        "Oxy OXYCODONE HYDROCHLORIDE 15 mg/1 TABLET ORAL 30 TABLET in 1 BOTTLE Lab"
+    )
+    assert f["qualifier_mismatch"] == 1.0 and f["has_quantity"] == 0.0

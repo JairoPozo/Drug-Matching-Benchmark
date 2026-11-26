@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 import zlib
 from dataclasses import dataclass
 
@@ -69,6 +70,20 @@ FEATURES = (
     "heuristic_gap",  # distance to the best other candidate (negative if not the best)
     "is_top",  # best candidate by the heuristic
 )
+# v0.2.0: absolute match quality (dev analysis: most products that are not in the catalog were
+# accepted as a sibling dose form, because form likelihood was relative to the other candidates).
+FEATURES_V2_EXTRA = (
+    "form_rel_global",  # dose form likelihood relative to the expected form over ALL dose forms
+    "expected_form_missing",  # the expected dose form is not among this ingredient set's concepts
+    "qualifier_mismatch",  # the name has a qualifier ("Abuse-Deterrent") the query never mentions
+    "has_quantity",  # the name states a unit volume ("1.7 ML ...")
+    "quantity_match",  # ... and the package text has that volume
+)
+ALL_FEATURES = FEATURES + FEATURES_V2_EXTRA
+FEATURE_SETS = {"v1": FEATURES, "v2": ALL_FEATURES}
+_QTY = re.compile(r"(?<![\w.])(\d*\.?\d+) ML (?=[A-Za-z])")
+_PACKAGE_ML = re.compile(r"(?<![\w.])(\d*\.?\d+)\s*mL in 1", re.IGNORECASE)
+_WORD = re.compile(r"^[a-z][a-z-]+$")
 
 
 @dataclass
@@ -77,6 +92,8 @@ class _Entry:
     text: str  # processed name, for text similarity
     components: list[tuple[str, Strength | None]]  # (ingredient key, strength)
     dose_form: str
+    qualifier: tuple[str, ...] = ()  # words before the first ingredient, e.g. ("abuse-deterrent",)
+    quantity_ml: float | None = None  # unit volume stated in the name, e.g. 1.7
 
 
 def _fold(group: str) -> int:
@@ -92,6 +109,8 @@ class RulesMatcher(Matcher):
         drop: str = "",
         filter_forms: int | str = 1,
         conversions: int | str = 1,
+        features: str = "v1",
+        scorer: str = "lr",
     ):
         """drop: comma-separated FEATURES left out of the stage 5 model (ablation).
         filter_forms=0 keeps candidates with an incompatible dose form (ablation of stage 3's
@@ -100,12 +119,18 @@ class RulesMatcher(Matcher):
         if self.stage not in STAGES:
             raise ValueError(f"stage must be one of {STAGES}")
         self.drop = tuple(sorted(f for f in str(drop).split(",") if f))
-        unknown = set(self.drop) - set(FEATURES)
-        if unknown:
-            raise ValueError(f"unknown features to drop: {sorted(unknown)}")
         self.filter_forms = int(filter_forms)
         self.conversions = int(conversions)
-        self.features = tuple(f for f in FEATURES if f not in self.drop)
+        if features not in FEATURE_SETS:
+            raise ValueError(f"features must be one of {sorted(FEATURE_SETS)}")
+        self.feature_set = features
+        unknown = set(self.drop) - set(FEATURE_SETS[features])
+        if unknown:
+            raise ValueError(f"unknown features to drop: {sorted(unknown)}")
+        self.features = tuple(f for f in FEATURE_SETS[features] if f not in self.drop)
+        if scorer not in ("lr", "gb"):
+            raise ValueError("scorer must be lr (logistic regression) or gb (gradient boosting)")
+        self.scorer = scorer
 
     @property
     def params(self) -> dict:
@@ -117,6 +142,10 @@ class RulesMatcher(Matcher):
             out["filter_forms"] = 0
         if not self.conversions:
             out["conversions"] = 0
+        if self.feature_set != "v1":
+            out["features"] = self.feature_set
+        if self.scorer != "lr":
+            out["scorer"] = self.scorer
         return out
 
     # ----- index ---------------------------------------------------------------------------
@@ -141,7 +170,17 @@ class RulesMatcher(Matcher):
                 comps.append((self._catalog_key(ingredient), strength))
                 self.catalog_names.update(name_variants(ingredient))
             self.blocks.setdefault(frozenset(k for k, _ in comps), []).append(len(self.entries))
-            self.entries.append(_Entry(rxcui, utils.default_process(name), comps, parsed.dose_form))
+            qty = parsed.quantity or (m.group(0) if (m := _QTY.search(name)) else None)
+            self.entries.append(
+                _Entry(
+                    rxcui,
+                    utils.default_process(name),
+                    comps,
+                    parsed.dose_form,
+                    self._qualifier(parsed.components[0][0]),
+                    float(qty.split()[0]) if qty else None,
+                )
+            )
         # Learned pieces come last: they read train queries with the index built above.
         self.form_model: FormModel | None = None
         self.factors: dict = {}
@@ -243,6 +282,12 @@ class RulesMatcher(Matcher):
         if not y or min(y) == max(y):
             return None  # nothing to learn: fall back to the heuristic score
         X = np.asarray([[f[n] for n in self.features] for _, _, f, _ in examples], dtype=float)
+        if self.scorer == "gb":
+            from sklearn.ensemble import HistGradientBoostingClassifier
+
+            model = HistGradientBoostingClassifier(random_state=0).fit(X, np.asarray(y))
+            self.training_summary["model"] = "HistGradientBoostingClassifier(random_state=0)"
+            return None, model
         scaler = StandardScaler().fit(X)
         model = LogisticRegression(max_iter=2000).fit(scaler.transform(X), np.asarray(y))
         self.training_summary["coefficients"] = dict(
@@ -254,6 +299,15 @@ class RulesMatcher(Matcher):
     def _catalog_key(self, ingredient: str) -> str:
         # Names can carry qualifiers before the ingredient ("Sprinkle 24 HR topiramate").
         return self._vocab_suffix(ingredient) or "name:" + name_variants(ingredient)[-1]
+
+    def _qualifier(self, first_component: str) -> tuple[str, ...]:
+        """Words before the ingredient name, without numbers and units ("Sprinkle 24 HR x")."""
+        words = norm_name(first_component).split()
+        for n in range(min(len(words), _MAX_SUFFIX_WORDS), 0, -1):
+            if self.vocab.lookup(" ".join(words[-n:])):
+                prefix = words[:-n]
+                return tuple(w for w in prefix if _WORD.match(w) and w not in ("hr", "ml", "mg"))
+        return ()
 
     def _vocab_suffix(self, text: str) -> str | None:
         """Base ingredient named by the longest word suffix of the text, if any."""
@@ -301,6 +355,12 @@ class RulesMatcher(Matcher):
         ]  # fmt: skip
         if not entries:
             return []
+        expected_form = self.form_model.expected(query) if self.form_model is not None else None
+        expected_missing = float(
+            expected_form is not None and expected_form not in {e.dose_form for e in entries}
+        )
+        lowered = query.lower()
+        volumes = [float(v) for v in _PACKAGE_ML.findall(query)]
         strengths = dict(zip(keys, (i.strength for i in parsed.ingredients), strict=True))
         form_p: dict[str, float | None] = {}
         if self.form_model is not None:
@@ -343,6 +403,16 @@ class RulesMatcher(Matcher):
                         "log_candidates": math.log1p(len(entries)),
                         "n_ingredients": float(len(keys)),
                         "heuristic": heuristic,
+                        "form_rel_global": self.form_model.relative_to_expected(query, e.dose_form)
+                        if self.form_model is not None and e.dose_form
+                        else 1.0,
+                        "expected_form_missing": expected_missing,
+                        "qualifier_mismatch": float(any(w not in lowered for w in e.qualifier)),
+                        "has_quantity": float(e.quantity_ml is not None),
+                        "quantity_match": float(
+                            e.quantity_ml is not None
+                            and any(abs(v - e.quantity_ml) <= 0.01 * e.quantity_ml for v in volumes)
+                        ),
                     },
                 )
             )
@@ -361,7 +431,7 @@ class RulesMatcher(Matcher):
         if self.stage >= 5 and self.model is not None:
             scaler, model = self.model
             X = np.asarray([[f[n] for n in self.features] for _, f in feats], dtype=float)
-            probs = model.predict_proba(scaler.transform(X))[:, 1]
+            probs = model.predict_proba(scaler.transform(X) if scaler is not None else X)[:, 1]
             scored = [(r, float(p)) for (r, _), p in zip(feats, probs, strict=True)]
         else:
             scored = [(r, f["heuristic"]) for r, f in feats]

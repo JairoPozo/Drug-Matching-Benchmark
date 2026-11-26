@@ -152,3 +152,19 @@ en test2). Todos los cambios son aditivos; ningún criterio se relaja.
      La comparación de H2 y H3 es el último par: `<v020>` contra `rules-stage5@wilson`.
    - El chequeo de hashes de `results/v0.1.0/freeze.json` falla ahora en los archivos de train, como
      es esperable: la v0.1.0 se reproduce desde su etiqueta.
+
+### Desviación 1 (2026-11-25), después de los experimentos en dev, antes de evaluar test2
+
+Datos vistos: dev (jornadas 1 y 2). test2: nada.
+
+- **Qué cambia:** la verificación de que la línea base es el método de la v0.1.0. La Enmienda 1 la
+  definía como `git diff v0.1.0` vacío en los módulos de las reglas. Durante la v0.2.0 se
+  agregaron a `rules.py` y `forms.py` opciones nuevas, todas desactivadas por defecto (atributos
+  v2, gradient boosting, parámetros de ablation), así que el diff ya no está vacío.
+- **Verificación que la reemplaza (más fuerte):** el código de la etiqueta `v0.1.0`, extraído con
+  `git archive v0.1.0 src` y corrido sobre los mismos datos de la v0.2.0 en una carpeta aparte,
+  produce en dev **predicciones idénticas** a las líneas base de la v0.2.0: `rules-stage4`, las
+  mismas 6.216 filas (candidato, orden y puntaje); `rules-stage5`, los mismos candidatos y una
+  diferencia máxima de puntaje de 0,0.
+- **Efecto en las hipótesis:** ninguno. No cambia criterios, regla de selección ni la evaluación
+  en test2.

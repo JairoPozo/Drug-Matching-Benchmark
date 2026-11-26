@@ -70,23 +70,44 @@ class FormModel:
                 self.counts.setdefault(ctx, Counter())[dose_form] += 1
         return self
 
-    def scores(self, query_text: str, dose_forms: Iterable[str]) -> dict[str, float | None]:
-        """Probability of each dose form for this query; None = incompatible.
-
-        Probabilities come from the most specific context seen MIN_COUNT times (add-one
-        smoothing); incompatibility is judged on the two general contexts.
-        """
+    def _table(self, query_text: str) -> tuple[Counter | None, set]:
+        """Counts of the most specific context seen MIN_COUNT times, and the forms seen with the
+        two general contexts. (None, empty) if the NDC form was never seen in train."""
         specific, middle, general = contexts(query_text)
-        dose_forms = list(dose_forms)
         known = self.counts.get(general)
         if not known:
-            return dict.fromkeys(dose_forms, 1.0)  # unseen NDC form: no information
+            return None, set()
         seen = set(known) | set(self.counts.get(middle, {}))
         table = next(
             (self.counts[c] for c in (specific, middle, general)
              if sum(self.counts.get(c, Counter()).values()) >= MIN_COUNT),
             known,
         )  # fmt: skip
+        return table, seen
+
+    def expected(self, query_text: str) -> str | None:
+        """The most usual RxNorm dose form for this product's form, route and container."""
+        table, _ = self._table(query_text)
+        return table.most_common(1)[0][0] if table else None
+
+    def relative_to_expected(self, query_text: str, dose_form: str) -> float:
+        """Likelihood of a dose form relative to the most usual one over ALL dose forms (1 = it is
+        the expected form). Unlike scores(), it does not depend on which forms the catalog has."""
+        table, _ = self._table(query_text)
+        if not table:
+            return 1.0
+        return (table.get(dose_form, 0) + 1) / (max(table.values()) + 1)
+
+    def scores(self, query_text: str, dose_forms: Iterable[str]) -> dict[str, float | None]:
+        """Probability of each dose form for this query; None = incompatible.
+
+        Probabilities come from the most specific context seen MIN_COUNT times (add-one
+        smoothing); incompatibility is judged on the two general contexts.
+        """
+        dose_forms = list(dose_forms)
+        table, seen = self._table(query_text)
+        if table is None:
+            return dict.fromkeys(dose_forms, 1.0)  # unseen NDC form: no information
         n = sum(table.values())
         out: dict[str, float | None] = {}
         for df in dose_forms:

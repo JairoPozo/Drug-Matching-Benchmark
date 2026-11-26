@@ -1,0 +1,71 @@
+{
+  "rule": "max dev coverage with Wilson LB >= 95%; ties (< 0.5 points): fewest NIL accepted; then simplest",
+  "n_configurations": 50,
+  "best_coverage": 0.727,
+  "tied_within_0.5_points": [
+    {
+      "source": "v2: gb: v2 without expected_form_missing",
+      "config": {
+        "stage": 5,
+        "scorer": "gb",
+        "features": "v2",
+        "drop": "expected_form_missing"
+      },
+      "coverage": 0.727,
+      "nil_accepted": 27,
+      "precision": 0.9614855570839065,
+      "complexity": [
+        true,
+        true,
+        16
+      ]
+    },
+    {
+      "source": "base: gb: all features",
+      "config": {
+        "stage": 5,
+        "scorer": "gb"
+      },
+      "coverage": 0.7235,
+      "nil_accepted": 28,
+      "precision": 0.9619903248099516,
+      "complexity": [
+        true,
+        true,
+        12
+      ]
+    },
+    {
+      "source": "v2: gb: v1 features",
+      "config": {
+        "stage": 5,
+        "scorer": "gb"
+      },
+      "coverage": 0.7235,
+      "nil_accepted": 28,
+      "precision": 0.9619903248099516,
+      "complexity": [
+        true,
+        true,
+        12
+      ]
+    }
+  ],
+  "chosen": {
+    "source": "v2: gb: v2 without expected_form_missing",
+    "config": {
+      "stage": 5,
+      "scorer": "gb",
+      "features": "v2",
+      "drop": "expected_form_missing"
+    },
+    "coverage": 0.727,
+    "nil_accepted": 27,
+    "precision": 0.9614855570839065,
+    "complexity": [
+      true,
+      true,
+      16
+    ]
+  }
+}

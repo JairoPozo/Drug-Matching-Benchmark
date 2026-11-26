@@ -59,7 +59,8 @@ def _parser() -> argparse.ArgumentParser:
         "Wilson 95%% lower bound of the precision (wilson)",
     )
     x = sub.add_parser("experiment", help="Dev-only experiments (ablations, scorers)")
-    x.add_argument("--name", required=True, help="Cache and result name, e.g. base")
+    x.add_argument("--name", help="Cache and result name, e.g. base")
+    x.add_argument("--select", action="store_true", help="Apply the pre-registered selection rule")
     x.add_argument("--param", action="append", default=[], metavar="KEY=VALUE")
     x.add_argument("--ablate", action="store_true", help="Feature ablation (drop one at a time)")
     x.add_argument("--scorer", action="append", default=[], choices=["lr", "gb"])
@@ -114,8 +115,13 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "experiment":
             from dmb.experiments import run
 
-            params = dict(p.split("=", 1) for p in args.param)
-            run(paths, args.name, params, args.ablate, args.scorer or ["lr"])
+            if args.select:
+                from dmb.experiments import select
+
+                select(paths)
+            else:
+                params = dict(p.split("=", 1) for p in args.param)
+                run(paths, args.name, params, args.ablate, args.scorer or ["lr"])
         elif args.cmd == "freeze":
             from dmb.compare import freeze
 

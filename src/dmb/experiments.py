@@ -14,7 +14,15 @@ from pathlib import Path
 import polars as pl
 
 from dmb.config import TARGET_PRECISION, Paths, read_json, write_json
-from dmb.matchers.rules import FEATURES, RulesMatcher
+from dmb.matchers.rules import (
+    ALL_FEATURES,
+    FEATURES,
+    FEATURES_V2_EXTRA,
+    RulesMatcher,
+)
+from dmb.matchers.rules import (
+    FEATURE_SETS as FEATURE_SETS_BY_NAME,
+)
 from dmb.metrics import (
     calibration,
     decision_metrics,
@@ -55,13 +63,13 @@ def build_cache(paths: Paths, name: str, params: dict | None = None, log=print) 
                 "qid": [r[0] for r in rows],
                 "rxcui": [r[1] for r in rows],
                 "label": [r[3] for r in rows],
-                **{f: [r[2][f] for r in rows] for f in FEATURES},
+                **{f: [r[2][f] for r in rows] for f in ALL_FEATURES},
             }
         ).write_parquet(out / f"{split}.parquet")
     dev.with_row_index("qid").select("qid", "expected_rxcui").write_parquet(
         out / "dev_expected.parquet"
     )
-    write_json(out / "meta.json", {"name": name, "params": params, "features": list(FEATURES)})
+    write_json(out / "meta.json", {"name": name, "params": params, "features": list(ALL_FEATURES)})
     return out
 
 
@@ -137,13 +145,23 @@ def heuristic_only(cache: Path) -> dict:
 
 def run(paths: Paths, name: str, params: dict, ablate: bool, scorers: list[str], log=print) -> dict:
     cache = build_cache(paths, name, params, log=log)
+    columns = set(pl.read_parquet(cache / "dev.parquet").columns)
+    sets = {"v1": list(FEATURES)}
+    if set(FEATURES_V2_EXTRA) <= columns:
+        sets["v2"] = list(ALL_FEATURES)
     rows = {"stage4 heuristic (no model)": heuristic_only(cache)}
     for scorer in scorers:
-        rows[f"{scorer}: all features"] = score_subset(cache, list(FEATURES), scorer)
+        for set_name, feats in sets.items():
+            rows[f"{scorer}: {set_name} features"] = score_subset(cache, feats, scorer)
     if ablate:
         rows["lr: heuristic only (calibrated stage 4)"] = score_subset(cache, ["heuristic"])
         for f in FEATURES:
-            rows[f"lr: without {f}"] = score_subset(cache, [x for x in FEATURES if x != f])
+            rows[f"lr: v1 without {f}"] = score_subset(cache, [x for x in FEATURES if x != f])
+        if "v2" in sets:
+            for scorer in scorers:
+                for f in FEATURES_V2_EXTRA:
+                    feats = [x for x in ALL_FEATURES if x != f]
+                    rows[f"{scorer}: v2 without {f}"] = score_subset(cache, feats, scorer)
     report = {"name": name, "params": read_json(cache / "meta.json")["params"], "rows": rows}
     write_json(paths.root / RESULTS / f"{name}.json", report)
     log(json.dumps({k: _short(v) for k, v in rows.items()}, indent=1))
@@ -160,3 +178,84 @@ def _short(r: dict) -> str:
         f"cov wilson {f(w.get('coverage'))} P {f(w.get('precision'))} "
         f"nil_acc {w.get('nil_accepted', '—')} | ECE {f(r['ece'], False)}"
     )
+
+
+# ---- selection (pre-registered rule, results/v0.2.0/plan.md section 5) -------------------------
+TIE_POINTS = 0.005  # coverage difference under 0.5 points is a tie
+
+
+def _config(cache_params: dict, row: str) -> dict | None:
+    """Matcher params (stage 5 unless noted) that reproduce a result row."""
+    base = {k: v for k, v in cache_params.items()}
+    if row.startswith("stage4"):
+        return {"stage": 4, **base}
+    scorer, _, rest = row.partition(": ")
+    cfg = {"stage": 5, **base, **({"scorer": scorer} if scorer != "lr" else {})}
+    if rest.startswith("heuristic only"):
+        return cfg | {"drop": ",".join(f for f in FEATURES if f != "heuristic")}
+    if rest.startswith("v2"):
+        cfg["features"] = "v2"
+    if " without " in rest:
+        cfg["drop"] = rest.split(" without ", 1)[1]
+    elif rest.startswith("without "):  # day 1 naming
+        cfg["drop"] = rest[len("without ") :]
+    return cfg
+
+
+def _complexity(cfg: dict) -> tuple:
+    n_features = len(FEATURE_SETS_BY_NAME[cfg.get("features", "v1")]) - len(
+        [d for d in cfg.get("drop", "").split(",") if d]
+    )
+    return (cfg.get("stage") == 5, cfg.get("scorer", "lr") == "gb", n_features)
+
+
+def select(paths: Paths, log=print) -> dict:
+    candidates = []
+    for path in sorted((paths.root / RESULTS).glob("*.json")):
+        if path.name == "selection.json":
+            continue
+        report = read_json(path)
+        for row, r in report["rows"].items():
+            w = r.get("wilson")
+            if not w:
+                continue
+            cfg = _config(report["params"], row)
+            candidates.append(
+                {
+                    "source": f"{path.stem}: {row}",
+                    "config": cfg,
+                    "coverage": w["coverage"],
+                    "nil_accepted": w["nil_accepted"],
+                    "precision": w["precision"],
+                    "complexity": _complexity(cfg),
+                }
+            )
+    if not candidates:
+        raise RuntimeError("No configuration meets the Wilson criterion on dev: nothing to select")
+    best = max(c["coverage"] for c in candidates)
+    tied = [c for c in candidates if best - c["coverage"] < TIE_POINTS]
+    fewest_nil = min(c["nil_accepted"] for c in tied)
+    tied_nil = [c for c in tied if c["nil_accepted"] == fewest_nil]
+    chosen = min(tied_nil, key=lambda c: c["complexity"])
+    out = {
+        "rule": "max dev coverage with Wilson LB >= 95%; ties (< 0.5 points): fewest NIL accepted; "
+        "then simplest",
+        "n_configurations": len(candidates),
+        "best_coverage": best,
+        "tied_within_0.5_points": sorted(tied, key=lambda c: -c["coverage"]),
+        "chosen": chosen,
+    }
+    write_json(paths.root / RESULTS / "selection.json", out)
+    log(
+        json.dumps(
+            {
+                "chosen": chosen,
+                "tied": [
+                    (c["source"], c["coverage"], c["nil_accepted"])
+                    for c in out["tied_within_0.5_points"]
+                ],
+            },
+            indent=1,
+        )
+    )
+    return out
