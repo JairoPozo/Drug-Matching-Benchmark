@@ -38,6 +38,8 @@ CAL_SEED = 2027
 
 class RxNavMatcher(Matcher):
     name = "rxnav"
+    folder = "rxnav"  # data/<folder>/responses_<split>.jsonl
+    sources = ("RXNORM",)  # atom sources kept
 
     def __init__(self, input: str = "full", score: str = "raw") -> None:
         if input not in VARIANTS:
@@ -58,7 +60,7 @@ class RxNavMatcher(Matcher):
         out, seen = [], set()
         for i in order:
             rxcui, _rxaui, score, _rank, source, _name = raw[i]
-            if source != "RXNORM" or rxcui not in self._catalog or rxcui in seen:
+            if source not in self.sources or rxcui not in self._catalog or rxcui in seen:
                 continue
             seen.add(rxcui)
             out.append((rxcui, float(score)))
@@ -93,7 +95,7 @@ class RxNavMatcher(Matcher):
         self._catalog = set(catalog["rxcui"].to_list())
         train = {
             n: self._keep(c)
-            for n, c in load_responses(self.paths, TRAIN_SAMPLE, self.input).items()
+            for n, c in load_responses(self.paths, TRAIN_SAMPLE, self.input, self.folder).items()
         }
         self._reference = sorted(kept[0][1] for kept in train.values() if kept)
         if not self._reference:
@@ -104,12 +106,12 @@ class RxNavMatcher(Matcher):
         self.training_summary = summary
 
         split = pl.read_parquet(self.paths.processed / f"{self.split}.parquet")
-        responses = load_responses(self.paths, self.split, self.input)
+        responses = load_responses(self.paths, self.split, self.input, self.folder)
         missing = [n for n in split["product_ndc"].to_list() if n not in responses]
         if missing:
             raise RuntimeError(
-                f"{len(missing)} {self.split} products have no RxNav response; "
-                f"run scripts/rxnav_fetch.py {self.split}"
+                f"{len(missing)} {self.split} products have no cached {self.name} candidates; "
+                f"run the {self.folder} script for {self.split}"
             )
         self._by_text = {
             text: self._keep(responses[ndc])
@@ -143,3 +145,14 @@ class RxNavMatcher(Matcher):
 
     def match_many(self, queries: Sequence[str], k: int = 5) -> list[Candidates]:
         return [self.match(q, k) for q in queries]
+
+
+class SapBERTMatcher(RxNavMatcher):
+    """SapBERT dense retrieval (v0.2.3), from candidates computed beforehand by
+    scripts/sapbert_embed.py: cosine similarity between the [CLS] embedding of the query and of
+    each RxNorm name (SCD, PSN and SY from source RXNORM) of the catalog concepts, keeping each
+    concept's best name. Same scale and calibration as rxnav."""
+
+    name = "sapbert"
+    folder = "sapbert"
+    sources = ("SAPBERT",)

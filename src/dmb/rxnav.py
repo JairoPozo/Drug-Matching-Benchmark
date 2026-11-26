@@ -30,8 +30,13 @@ TRAIN_SAMPLE_SIZE = 2000
 TRAIN_SAMPLE_SEED = 2027
 
 
+def cache_dir(paths: Paths, folder: str = "rxnav") -> Path:
+    """data/<folder>: cached candidates of an external tool (rxnav, sapbert)."""
+    return paths.root / "data" / folder
+
+
 def rxnav_dir(paths: Paths) -> Path:
-    return paths.root / "data" / "rxnav"
+    return cache_dir(paths, "rxnav")
 
 
 def short_query(rec: dict) -> str:
@@ -77,12 +82,12 @@ def export_queries(paths: Paths, names: list[str], log=print) -> None:
         log(f"[rxnav] {df.height} queries -> {path}")
 
 
-def load_responses(paths: Paths, name: str, variant: str) -> dict[str, list]:
+def load_responses(paths: Paths, name: str, variant: str, folder: str = "rxnav") -> dict[str, list]:
     """product_ndc -> candidates [rxcui, rxaui, score, rank, source, name], from the last
     successful response of each product (a resumed download may hold earlier failed lines)."""
-    path = rxnav_dir(paths) / f"responses_{name}.jsonl"
+    path = cache_dir(paths, folder) / f"responses_{name}.jsonl"
     if not path.exists():
-        raise FileNotFoundError(f"{path} not found. Run scripts/rxnav_fetch.py {name} first.")
+        raise FileNotFoundError(f"{path} not found. Run the {folder} script for {name} first.")
     out: dict[str, list] = {}
     with path.open(encoding="utf-8") as f:
         for line in f:
@@ -91,4 +96,39 @@ def load_responses(paths: Paths, name: str, variant: str) -> dict[str, list]:
             row = json.loads(line)
             if row.get("variant") == variant and row.get("status") == "ok":
                 out[row["product_ndc"]] = row["candidates"]
+    return out
+
+
+SAPBERT_NAME_TTYS = ("SCD", "PSN", "SY")
+
+
+def export_catalog_names(paths: Paths, log=print) -> Path:
+    """data/sapbert/catalog_names.jsonl: every RxNorm name (source RXNORM, not suppressed, term
+    types SCD, PSN and SY) of the catalog concepts, lowercased and without duplicates. Held-out
+    concepts are not in the catalog, so their names are never written."""
+    from dmb.rxnorm import RXNCONSO_COLUMNS
+
+    catalog = set(pl.read_parquet(paths.processed / "catalog.parquet")["rxcui"].to_list())
+    col = {c: i for i, c in enumerate(RXNCONSO_COLUMNS)}
+    seen: set[tuple[str, str]] = set()
+    rows = []
+    with (paths.rrf_dir / "RXNCONSO.RRF").open(encoding="utf-8") as f:
+        for line in f:
+            r = line.rstrip("\n").split("|")
+            rxcui, name = r[col["RXCUI"]], r[col["STR"]].lower()
+            if (
+                rxcui in catalog
+                and r[col["SAB"]] == "RXNORM"
+                and r[col["TTY"]] in SAPBERT_NAME_TTYS
+                and r[col["SUPPRESS"]] == "N"
+                and (rxcui, name) not in seen
+            ):
+                seen.add((rxcui, name))
+                rows.append({"rxcui": rxcui, "name": name})
+    out = cache_dir(paths, "sapbert") / "catalog_names.jsonl"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as f:
+        for row in sorted(rows, key=lambda r: (r["rxcui"], r["name"])):
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    log(f"[sapbert] {len(rows)} names of {len({r['rxcui'] for r in rows})} concepts -> {out}")
     return out

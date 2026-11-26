@@ -1,0 +1,309 @@
+{
+  "note": "Exploratory dev runs of the SapBERT baseline (v0.2.3 plan, section 6).",
+  "runs": {
+    "sapbert-inputshort-scoreraw": {
+      "run": "20261126-144616_sapbert-inputshort-scoreraw_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": 0.3455,
+      "coverage": 0.54,
+      "accept_precision": 0.950925925925926,
+      "n_accepted": 1080,
+      "accepted_not_in_catalog": 13,
+      "ece": 0.37644425000000015,
+      "brier": 0.283773724375,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputshort-scoreraw@wilson": {
+      "run": "20261126-144617_sapbert-inputshort-scoreraw@wilson_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": 0.601,
+      "coverage": 0.3215,
+      "accept_precision": 0.9673405909797823,
+      "n_accepted": 643,
+      "accepted_not_in_catalog": 4,
+      "ece": 0.37644425000000015,
+      "brier": 0.283773724375,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputshort-scoreraw@ltt": {
+      "run": "20261126-144618_sapbert-inputshort-scoreraw@ltt_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": null,
+      "coverage": null,
+      "accept_precision": null,
+      "n_accepted": null,
+      "accepted_not_in_catalog": null,
+      "ece": 0.37644425000000015,
+      "brier": 0.283773724375,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputshort-scoreraw@sgr": {
+      "run": "20261126-144619_sapbert-inputshort-scoreraw@sgr_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": null,
+      "coverage": null,
+      "accept_precision": null,
+      "n_accepted": null,
+      "accepted_not_in_catalog": null,
+      "ece": 0.37644425000000015,
+      "brier": 0.283773724375,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputshort-scorecal": {
+      "run": "20261126-144621_sapbert-inputshort-scorecal_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": 0.7780197155787898,
+      "coverage": 0.5905,
+      "accept_precision": 0.9500423370025403,
+      "n_accepted": 1181,
+      "accepted_not_in_catalog": 16,
+      "ece": 0.07617478363742299,
+      "brier": 0.1119219561907654,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 1.977,
+          "gap_to_second": 4.166,
+          "log_candidates": -0.013,
+          "intercept": -0.145
+        }
+      }
+    },
+    "sapbert-inputshort-scorecal@wilson": {
+      "run": "20261126-144623_sapbert-inputshort-scorecal@wilson_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": 0.9065010454638078,
+      "coverage": 0.43,
+      "accept_precision": 0.9651162790697675,
+      "n_accepted": 860,
+      "accepted_not_in_catalog": 7,
+      "ece": 0.07617478363742299,
+      "brier": 0.1119219561907654,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 1.977,
+          "gap_to_second": 4.166,
+          "log_candidates": -0.013,
+          "intercept": -0.145
+        }
+      }
+    },
+    "sapbert-inputshort-scorecal@ltt": {
+      "run": "20261126-144624_sapbert-inputshort-scorecal@ltt_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": 0.904,
+      "coverage": 0.436,
+      "accept_precision": 0.963302752293578,
+      "n_accepted": 872,
+      "accepted_not_in_catalog": 8,
+      "ece": 0.07617478363742299,
+      "brier": 0.1119219561907654,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 1.977,
+          "gap_to_second": 4.166,
+          "log_candidates": -0.013,
+          "intercept": -0.145
+        }
+      }
+    },
+    "sapbert-inputshort-scorecal@sgr": {
+      "run": "20261126-144626_sapbert-inputshort-scorecal@sgr_dev",
+      "accuracy@1": 0.8815426997245179,
+      "recall@5": 0.9674931129476584,
+      "threshold": 0.9224847049611852,
+      "coverage": 0.4095,
+      "accept_precision": 0.9706959706959707,
+      "n_accepted": 819,
+      "accepted_not_in_catalog": 6,
+      "ece": 0.07617478363742299,
+      "brier": 0.1119219561907654,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 1.977,
+          "gap_to_second": 4.166,
+          "log_candidates": -0.013,
+          "intercept": -0.145
+        }
+      }
+    },
+    "sapbert-inputfull-scoreraw": {
+      "run": "20261126-144627_sapbert-inputfull-scoreraw_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": null,
+      "coverage": null,
+      "accept_precision": null,
+      "n_accepted": null,
+      "accepted_not_in_catalog": null,
+      "ece": 0.29847550000000006,
+      "brier": 0.26439822275,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputfull-scoreraw@wilson": {
+      "run": "20261126-144628_sapbert-inputfull-scoreraw@wilson_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": null,
+      "coverage": null,
+      "accept_precision": null,
+      "n_accepted": null,
+      "accepted_not_in_catalog": null,
+      "ece": 0.29847550000000006,
+      "brier": 0.26439822275,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputfull-scoreraw@ltt": {
+      "run": "20261126-144629_sapbert-inputfull-scoreraw@ltt_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": null,
+      "coverage": null,
+      "accept_precision": null,
+      "n_accepted": null,
+      "accepted_not_in_catalog": null,
+      "ece": 0.29847550000000006,
+      "brier": 0.26439822275,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputfull-scoreraw@sgr": {
+      "run": "20261126-144631_sapbert-inputfull-scoreraw@sgr_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": null,
+      "coverage": null,
+      "accept_precision": null,
+      "n_accepted": null,
+      "accepted_not_in_catalog": null,
+      "ece": 0.29847550000000006,
+      "brier": 0.26439822275,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000
+      }
+    },
+    "sapbert-inputfull-scorecal": {
+      "run": "20261126-144632_sapbert-inputfull-scorecal_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": 0.773313205019591,
+      "coverage": 0.534,
+      "accept_precision": 0.950374531835206,
+      "n_accepted": 1068,
+      "accepted_not_in_catalog": 25,
+      "ece": 0.05105280533234192,
+      "brier": 0.12872903481444062,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 0.53,
+          "gap_to_second": 6.378,
+          "log_candidates": 1.201,
+          "intercept": -5.683
+        }
+      }
+    },
+    "sapbert-inputfull-scorecal@wilson": {
+      "run": "20261126-144634_sapbert-inputfull-scorecal@wilson_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": 0.8349002411237965,
+      "coverage": 0.4615,
+      "accept_precision": 0.9642470205850487,
+      "n_accepted": 923,
+      "accepted_not_in_catalog": 18,
+      "ece": 0.05105280533234192,
+      "brier": 0.12872903481444062,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 0.53,
+          "gap_to_second": 6.378,
+          "log_candidates": 1.201,
+          "intercept": -5.683
+        }
+      }
+    },
+    "sapbert-inputfull-scorecal@ltt": {
+      "run": "20261126-144636_sapbert-inputfull-scorecal@ltt_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": 0.832,
+      "coverage": 0.4665,
+      "accept_precision": 0.962486602357985,
+      "n_accepted": 933,
+      "accepted_not_in_catalog": 19,
+      "ece": 0.05105280533234192,
+      "brier": 0.12872903481444062,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 0.53,
+          "gap_to_second": 6.378,
+          "log_candidates": 1.201,
+          "intercept": -5.683
+        }
+      }
+    },
+    "sapbert-inputfull-scorecal@sgr": {
+      "run": "20261126-144637_sapbert-inputfull-scorecal@sgr_dev",
+      "accuracy@1": 0.840771349862259,
+      "recall@5": 0.9680440771349862,
+      "threshold": 0.8486502425944825,
+      "coverage": 0.443,
+      "accept_precision": 0.9695259593679458,
+      "n_accepted": 886,
+      "accepted_not_in_catalog": 15,
+      "ece": 0.05105280533234192,
+      "brier": 0.12872903481444062,
+      "training": {
+        "training_products": 2000,
+        "with_candidates": 2000,
+        "coefficients": {
+          "scaled_score": 0.53,
+          "gap_to_second": 6.378,
+          "log_candidates": 1.201,
+          "intercept": -5.683
+        }
+      }
+    }
+  }
+}

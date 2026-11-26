@@ -1,0 +1,309 @@
+{
+  "matcher": "sapbert-inputshort-scorecal@wilson",
+  "params": {
+    "input": "short",
+    "score": "cal"
+  },
+  "threshold_rule": "wilson",
+  "split": "dev",
+  "final": false,
+  "limit": null,
+  "thresholds_from": "this split",
+  "created_at": "2026-11-26T14:46:23+00:00",
+  "git_commit": "315ce4e",
+  "n_queries": 2000,
+  "n_not_in_catalog": 185,
+  "catalog_size": 10888,
+  "k": 5,
+  "ranking": {
+    "n_answerable": 1815,
+    "accuracy@1": 0.8815426997245179,
+    "recall@5": 0.9674931129476584
+  },
+  "target_precision": 0.95,
+  "at_target_precision": {
+    "threshold": 0.9065010454638078,
+    "n_accepted": 860,
+    "n_abstained": 1140,
+    "accept_precision": 0.9651162790697675,
+    "accept_recall": 0.4573002754820937,
+    "accept_f1": 0.6205607476635514,
+    "abstain_precision": 0.156140350877193,
+    "abstain_recall": 0.9621621621621622,
+    "end_to_end_accuracy": 0.504,
+    "false_accept_rate": 0.03488372093023256,
+    "coverage": 0.43,
+    "counts": {
+      "correct_accept": 830,
+      "wrong_accept": 23,
+      "accept_on_nil": 7,
+      "missed": 962,
+      "correct_abstain": 178
+    }
+  },
+  "at_best_f1": {
+    "threshold": 0.49618577320992774,
+    "n_accepted": 1755,
+    "n_abstained": 245,
+    "accept_precision": 0.882051282051282,
+    "accept_recall": 0.8528925619834711,
+    "accept_f1": 0.8672268907563024,
+    "abstain_precision": 0.47346938775510206,
+    "abstain_recall": 0.6270270270270271,
+    "end_to_end_accuracy": 0.832,
+    "false_accept_rate": 0.11794871794871795,
+    "coverage": 0.8775,
+    "counts": {
+      "correct_accept": 1548,
+      "wrong_accept": 138,
+      "accept_on_nil": 69,
+      "missed": 129,
+      "correct_abstain": 116
+    }
+  },
+  "calibration": {
+    "ece": 0.07617478363742299,
+    "brier": 0.1119219561907654,
+    "bins": [
+      {
+        "bin": "0.4-0.5",
+        "n": 261,
+        "mean_score": 0.47023869478688457,
+        "precision": 0.23371647509578544
+      },
+      {
+        "bin": "0.5-0.6",
+        "n": 223,
+        "mean_score": 0.5490870624282553,
+        "precision": 0.6502242152466368
+      },
+      {
+        "bin": "0.6-0.7",
+        "n": 170,
+        "mean_score": 0.6510152853983806,
+        "precision": 0.7647058823529411
+      },
+      {
+        "bin": "0.7-0.8",
+        "n": 213,
+        "mean_score": 0.7469415573854206,
+        "precision": 0.8497652582159625
+      },
+      {
+        "bin": "0.8-0.9",
+        "n": 249,
+        "mean_score": 0.8549382328968211,
+        "precision": 0.9317269076305221
+      },
+      {
+        "bin": "0.9-1.0",
+        "n": 884,
+        "mean_score": 0.9713964401460382,
+        "precision": 0.9626696832579186
+      }
+    ]
+  },
+  "bands": {
+    "t_accept": 0.9065010454638078,
+    "t_abstain": 0.4577207392458994,
+    "accept": {
+      "n": 860,
+      "share": 0.43,
+      "precision": 0.9651162790697675
+    },
+    "review": {
+      "n": 1085,
+      "share": 0.5425,
+      "n_nil": 138,
+      "top1_precision": 0.7078341013824885,
+      "answer_in_top5": 0.955649419218585
+    },
+    "abstain": {
+      "n": 55,
+      "share": 0.0275,
+      "n_nil": 40,
+      "useless_share": 0.9090909090909091
+    }
+  },
+  "training": {
+    "training_products": 2000,
+    "with_candidates": 2000,
+    "coefficients": {
+      "scaled_score": 1.977,
+      "gap_to_second": 4.166,
+      "log_candidates": -0.013,
+      "intercept": -0.145
+    }
+  },
+  "subgroups": {
+    "operating_point": "target_precision",
+    "threshold": 0.9065010454638078,
+    "groups": {
+      "ingredients": {
+        "0 (kit, no ingredients)": {
+          "n": 26,
+          "n_nil": 0,
+          "accuracy@1": 0.0,
+          "end_to_end_accuracy": 0.0,
+          "false_accept_rate": null,
+          "coverage": 0.0
+        },
+        "1": {
+          "n": 1601,
+          "n_nil": 143,
+          "accuracy@1": 0.8834019204389575,
+          "end_to_end_accuracy": 0.5540287320424735,
+          "false_accept_rate": 0.03717948717948718,
+          "coverage": 0.4871955028107433
+        },
+        "2+": {
+          "n": 373,
+          "n_nil": 42,
+          "accuracy@1": 0.9425981873111783,
+          "end_to_end_accuracy": 0.32439678284182305,
+          "false_accept_rate": 0.0125,
+          "coverage": 0.21447721179624665
+        }
+      },
+      "route": {
+        "dental": {
+          "n": 53,
+          "n_nil": 2,
+          "accuracy@1": 0.35294117647058826,
+          "end_to_end_accuracy": 0.03773584905660377,
+          "false_accept_rate": null,
+          "coverage": 0.0
+        },
+        "inhalation": {
+          "n": 32,
+          "n_nil": 6,
+          "accuracy@1": 0.8076923076923077,
+          "end_to_end_accuracy": 0.25,
+          "false_accept_rate": 0.0,
+          "coverage": 0.0625
+        },
+        "injectable": {
+          "n": 209,
+          "n_nil": 21,
+          "accuracy@1": 0.7712765957446809,
+          "end_to_end_accuracy": 0.2583732057416268,
+          "false_accept_rate": 0.10526315789473684,
+          "coverage": 0.18181818181818182
+        },
+        "multiple": {
+          "n": 19,
+          "n_nil": 4,
+          "accuracy@1": 0.8,
+          "end_to_end_accuracy": 0.2631578947368421,
+          "false_accept_rate": 0.0,
+          "coverage": 0.05263157894736842
+        },
+        "nasal": {
+          "n": 30,
+          "n_nil": 1,
+          "accuracy@1": 0.8620689655172413,
+          "end_to_end_accuracy": 0.26666666666666666,
+          "false_accept_rate": 0.0,
+          "coverage": 0.23333333333333334
+        },
+        "ophthalmic": {
+          "n": 67,
+          "n_nil": 14,
+          "accuracy@1": 0.9622641509433962,
+          "end_to_end_accuracy": 0.6567164179104478,
+          "false_accept_rate": 0.0,
+          "coverage": 0.44776119402985076
+        },
+        "oral": {
+          "n": 975,
+          "n_nil": 92,
+          "accuracy@1": 0.9637599093997735,
+          "end_to_end_accuracy": 0.7251282051282051,
+          "false_accept_rate": 0.01597444089456869,
+          "coverage": 0.642051282051282
+        },
+        "other": {
+          "n": 55,
+          "n_nil": 5,
+          "accuracy@1": 0.86,
+          "end_to_end_accuracy": 0.3090909090909091,
+          "false_accept_rate": 0.07142857142857142,
+          "coverage": 0.2545454545454545
+        },
+        "topical": {
+          "n": 542,
+          "n_nil": 40,
+          "accuracy@1": 0.8645418326693227,
+          "end_to_end_accuracy": 0.3007380073800738,
+          "false_accept_rate": 0.1056338028169014,
+          "coverage": 0.26199261992619927
+        },
+        "unknown": {
+          "n": 18,
+          "n_nil": 0,
+          "accuracy@1": 0.0,
+          "end_to_end_accuracy": 0.0,
+          "false_accept_rate": null,
+          "coverage": 0.0
+        }
+      },
+      "catalog": {
+        "in catalog": {
+          "n": 1815,
+          "n_nil": 0,
+          "accuracy@1": 0.8815426997245179,
+          "end_to_end_accuracy": 0.4573002754820937,
+          "false_accept_rate": 0.026963657678780773,
+          "coverage": 0.4699724517906336
+        },
+        "not in catalog (NIL)": {
+          "n": 185,
+          "n_nil": 185,
+          "accuracy@1": null,
+          "end_to_end_accuracy": 0.9621621621621622,
+          "false_accept_rate": 1.0,
+          "coverage": 0.03783783783783784
+        }
+      },
+      "product_type": {
+        "otc": {
+          "n": 944,
+          "n_nil": 75,
+          "accuracy@1": 0.8584579976985041,
+          "end_to_end_accuracy": 0.3930084745762712,
+          "false_accept_rate": 0.0625,
+          "coverage": 0.3389830508474576
+        },
+        "other": {
+          "n": 1,
+          "n_nil": 0,
+          "accuracy@1": 1.0,
+          "end_to_end_accuracy": 0.0,
+          "false_accept_rate": null,
+          "coverage": 0.0
+        },
+        "prescription": {
+          "n": 1055,
+          "n_nil": 110,
+          "accuracy@1": 0.9026455026455027,
+          "end_to_end_accuracy": 0.6037914691943128,
+          "false_accept_rate": 0.018518518518518517,
+          "coverage": 0.5118483412322274
+        }
+      }
+    }
+  },
+  "timing_seconds": {
+    "fit": 0.891,
+    "match_total": 0.112,
+    "match_per_query_ms": 0.056
+  },
+  "data": {
+    "ndc_export_date": "2026-11-06",
+    "ndc_sha256": [
+      "f6dc6cf80ba38a190d8e8bcb51d83c2e76a0036aec48c62a9d5683e7f7b3939a"
+    ],
+    "rxnorm_release": "2026-11-02",
+    "rxnorm_sha256": "c742a6c4b2995194aa3479400e08a7c1ad707178bfc80fe9c8cd7afa693ae987"
+  }
+}

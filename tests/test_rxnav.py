@@ -10,7 +10,7 @@ import pytest
 from dmb.config import Paths, read_json
 from dmb.evaluate import evaluate
 from dmb.matchers import get_matcher
-from dmb.rxnav import TRAIN_SAMPLE, rxnav_dir, short_query
+from dmb.rxnav import TRAIN_SAMPLE, cache_dir, rxnav_dir, short_query
 
 QUIET = {"log": lambda *_: None}
 
@@ -105,5 +105,39 @@ def test_rxnav_runs_end_to_end_and_needs_every_response(rxnav_root):
     )
     lines = (rxnav_dir(p) / "responses_dev.jsonl").read_text(encoding="utf-8").splitlines()
     (rxnav_dir(p) / "responses_dev.jsonl").write_text("\n".join(lines[2:]) + "\n", encoding="utf-8")
-    with pytest.raises(RuntimeError, match="no RxNav response"):
+    with pytest.raises(RuntimeError, match="no cached rxnav candidates"):
         evaluate(p, "rxnav", "dev", params={"input": "full"}, **QUIET)
+
+
+def test_sapbert_reads_its_own_cache(built_root):
+    p = Paths(built_root)
+    catalog = set(pl.read_parquet(p.processed / "catalog.parquet")["rxcui"].to_list())
+    folder = cache_dir(p, "sapbert")
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, df in (
+        (TRAIN_SAMPLE, pl.read_parquet(p.processed / "train.parquet").filter(pl.col("in_catalog"))),
+        ("dev", pl.read_parquet(p.processed / "dev.parquet")),
+    ):
+        with (folder / f"responses_{name}.jsonl").open("w", encoding="utf-8") as f:
+            for ndc, gold in df.select("product_ndc", "gold_rxcui").iter_rows():
+                other = next(r for r in sorted(catalog) if r != gold)
+                cands = [
+                    [gold, None, 0.9, 1, "SAPBERT", None],
+                    [other, None, 0.5, 2, "SAPBERT", None],
+                ]
+                for variant in ("full", "short"):
+                    row = {
+                        "product_ndc": ndc,
+                        "variant": variant,
+                        "status": "ok",
+                        "candidates": cands,
+                    }
+                    f.write(json.dumps(row) + "\n")
+    dev = pl.read_parquet(p.processed / "dev.parquet")
+    matcher = get_matcher("sapbert", input="short", score="raw")
+    matcher.paths, matcher.split = p, "dev"
+    matcher.fit(pl.read_parquet(p.processed / "catalog.parquet"))
+    cands = matcher.match_many(dev["query_text"].to_list())
+    rows = dev.select("expected_rxcui", "gold_rxcui").iter_rows()
+    for (expected, gold), c in zip(rows, cands, strict=True):
+        assert c[0][0] == gold if expected is not None else gold not in [r for r, _ in c]

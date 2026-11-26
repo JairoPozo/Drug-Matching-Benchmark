@@ -1,9 +1,11 @@
 from dmb.matchers.base import Candidates, Matcher
 from dmb.matchers.dummy import DummyMatcher
 from dmb.matchers.rules import RulesMatcher
-from dmb.matchers.rxnav import RxNavMatcher
+from dmb.matchers.rxnav import RxNavMatcher, SapBERTMatcher
 
-MATCHERS: dict[str, type[Matcher]] = {m.name: m for m in (DummyMatcher, RulesMatcher, RxNavMatcher)}
+MATCHERS: dict[str, type[Matcher]] = {
+    m.name: m for m in (DummyMatcher, RulesMatcher, RxNavMatcher, SapBERTMatcher)
+}
 
 
 def get_matcher(name: str, **params) -> Matcher:
