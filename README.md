@@ -243,11 +243,13 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ├── results/v0.2.1/       # threshold rules with a formal guarantee: plan, freeze, test2, resampling
 ├── results/v0.2.2/       # RxNav baseline: plan, dev runs, freeze, test2 results
 ├── results/v0.2.3/       # SapBERT baseline: plan, dev runs, freeze, test2 results
+├── results/figures/      # article figures 1-3 (PNG and PDF, Spanish and English)
 ├── scripts/              # one-off analyses (test2_analysis.py, test_secondary.py,
 │                         #   pharmacist_review.py, threshold_resampling.py,
 │                         #   precision_at_coverage.py), the RxNav download
-│                         #   (rxnav_queries.py, rxnav_fetch.py) and the SapBERT candidates
-│                         #   (sapbert_names.py, sapbert_embed.py)
+│                         #   (rxnav_queries.py, rxnav_fetch.py), the SapBERT candidates
+│                         #   (sapbert_names.py, sapbert_embed.py) and the article figures
+│                         #   (figures.py)
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/
