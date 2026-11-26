@@ -86,6 +86,69 @@ muchas variantes en test2 y quedarse con la mejor.
 5. Opcional, como secundario: la v0.2.0 evaluada una vez en el test de la v0.1.0, sin usarlo para
    decidir nada.
 
-## Desviaciones
+## Enmiendas y desviaciones
 
-(ninguna hasta ahora)
+### Regla
+
+- Todo cambio a este plan se agrega aquí, con fecha, qué cambia, por qué y **qué datos se habían
+  visto** en ese momento: ninguno, dev o test2. El texto original nunca se reescribe.
+- Una enmienda hecha antes de cualquier experimento de la v0.2.0 mantiene el carácter
+  confirmatorio de las hipótesis.
+- Un cambio hecho después de ver resultados de dev se reporta como **exploratorio**.
+- Un cambio hecho después de ver test2 quita el carácter confirmatorio a las hipótesis afectadas;
+  se reporta así, y confirmarlas requeriría otro split independiente (por ejemplo, un test temporal
+  con una descarga futura del NDC).
+
+### Enmienda 1 (2026-11-25), antes de cualquier experimento de la v0.2.0
+
+Datos vistos al hacerla: ninguno de la v0.2.0 (no hay corridas con el train nuevo en dev ni ninguna
+en test2). Todos los cambios son aditivos; ningún criterio se relaja.
+
+1. **H1: selección y resultado se separan.**
+   - *Selección, en dev:* entre los umbrales posibles, el de mayor cobertura cuyo límite inferior
+     de Wilson (95 %) de la precisión de aceptación sea ≥ 95 %. Se implementa como opción de la
+     evaluación, `--threshold-rule wilson`, sin tocar los matchers; la regla actual (precisión
+     puntual ≥ 95 %) se llama `point`.
+   - *Resultado, en test2:* precisión observada, intervalo de Wilson del 95 %, número de
+     aceptaciones automáticas y número de falsos positivos (y cuántos son productos que no están en
+     el catálogo). El criterio de éxito no cambia: precisión observada ≥ 95 %. Cumplir en dev no
+     garantiza cumplir en test2; si no se cumple, se reporta como resultado negativo.
+2. **H2: de dónde viene la cobertura.** Además de la diferencia, se reporta: la diferencia absoluta
+   en puntos porcentuales con su intervalo bootstrap pareado del 95 % sobre los mismos 2.000
+   productos; cuántos productos pasan de revisión o abstención a aceptación, y cuántos de ellos son
+   correctos; cuántos dejan de aceptarse; y la matriz completa de transiciones entre bandas.
+3. **H3: tasa sobre los productos inexistentes.** Se reporta
+   FAR_NIL = productos que no están en el catálogo y fueron aceptados / total de ellos en test2
+   (175), con su diferencia pareada (bootstrap) y la prueba de McNemar sobre esos 175, además del
+   conteo. Así se distingue una mejora real de una simple baja de cobertura.
+4. **H4: solo descriptiva.** Dentales, inhalados y kits se reportan con su n en test2, acierto top 1
+   y tasa de aceptaciones falsas, sin pruebas de hipótesis ni valores p.
+5. **Trazabilidad.**
+   - Datos: hash combinado `409a07a7755e3a7eb8b77ce98a88cae8e1c22173857410b4e92075c6b03bf436`;
+     hashes por archivo y de las fuentes crudas (fecha y SHA-256 de NDC y RxNorm) en
+     `results/v0.2.0/prereg_hashes.json`.
+   - Splits: `test2.txt` y `meta.json` con los mismos hashes del pre-registro original; `dev.txt` y
+     `test.txt` idénticos a la v0.1.0.
+   - Código de la línea base: etiqueta `v0.1.0` (commit `fb0a744`). Lo agregado después (test2,
+     comparación) no toca matchers, formas, dosis, lectura ni métricas; se verifica con
+     `git diff v0.1.0 -- src/dmb/matchers src/dmb/forms.py src/dmb/strength.py src/dmb/parse.py
+     src/dmb/rxvocab.py src/dmb/metrics.py` (salida vacía al hacer esta enmienda).
+   - Pre-registro: commit `7f78279`, etiqueta `v0.2.0-prereg`. Esta enmienda: su propio commit,
+     etiqueta `v0.2.0-prereg-a1`.
+   - Selección: sección 5, con la regla de umbral de H1.
+   - Evaluación final, comandos exactos (`<v020>` es la configuración elegida en dev):
+
+     ```
+     dmb freeze --version v0.2.0 --matcher rules-stage4 --matcher rules-stage5 \
+       --matcher rules-stage5@wilson --matcher <v020>
+     dmb eval --matcher rules --param stage=4 --split test2 --final
+     dmb eval --matcher rules --param stage=5 --split test2 --final
+     dmb eval --matcher rules --param stage=5 --threshold-rule wilson --split test2 --final
+     dmb eval <v020> --threshold-rule wilson --split test2 --final
+     dmb compare --split test2 --version v0.2.0 --matcher rules-stage4 --matcher rules-stage5 \
+       --matcher rules-stage5@wilson --matcher <v020>
+     ```
+
+     La comparación de H2 y H3 es el último par: `<v020>` contra `rules-stage5@wilson`.
+   - El chequeo de hashes de `results/v0.1.0/freeze.json` falla ahora en los archivos de train, como
+     es esperable: la v0.1.0 se reproduce desde su etiqueta.

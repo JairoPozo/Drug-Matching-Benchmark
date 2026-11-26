@@ -5,9 +5,11 @@ freeze   Before test: copy each matcher's dev reference run (thresholds, coeffic
          after that, nothing seen on test may change thresholds, rules or coefficients.
 compare  Paired comparison on one split: every matcher is scored on the same products with the
          thresholds fixed on dev. Reports a Wilson 95% interval for the precision of automatic
-         accepts, McNemar's exact test on top-1 correctness, and paired bootstrap 95% intervals
-         for the differences in coverage and accuracy. If a freeze exists, checks that the data
-         hashes and the dev reference runs are the frozen ones.
+         accepts, McNemar's exact test on top-1 correctness and on accepting products that are
+         not in the catalog, paired bootstrap 95% intervals for the differences in coverage,
+         accuracy and the NIL accept rate, and the transitions between decision bands (how many
+         products move from review to accept, and how many stop being accepted). If a freeze
+         exists, checks that the data hashes and the dev reference runs are the frozen ones.
 """
 
 from __future__ import annotations
@@ -150,6 +152,8 @@ def _summary(m: dict, expected, candidates) -> dict:
     bands = decision_bands(expected, candidates, t95, t_abstain)
     abstain = bands["abstain"]
     out |= {
+        "n_nil": n_nil,
+        "nil_accept_rate": c["accept_on_nil"] / n_nil if n_nil else None,
         "coverage": d["coverage"],
         "accepted": accepted,
         "accept_precision": d["accept_precision"],
@@ -164,6 +168,37 @@ def _summary(m: dict, expected, candidates) -> dict:
         "abstain_in_catalog": abstain["n"] - abstain["n_nil"],
     }
     return out
+
+
+def band_of(candidates: list, t_accept: float | None, t_abstain: float | None) -> str:
+    """accept / review / abstain, as in metrics.decision_bands."""
+    if not candidates:
+        return "abstain"
+    score = candidates[0][1]
+    if t_accept is not None and score >= t_accept:
+        return "accept"
+    floor = (
+        min(t_abstain, t_accept) if t_abstain is not None and t_accept is not None else t_abstain
+    )
+    if floor is not None and score < floor:
+        return "abstain"
+    return "review"
+
+
+def transitions(bands_a: list[str], bands_b: list[str], right_b: list[bool]) -> dict:
+    """How products move between decision bands from method a to method b."""
+    moves: dict[str, int] = {}
+    for x, y in zip(bands_a, bands_b, strict=True):
+        moves[f"{x}->{y}"] = moves.get(f"{x}->{y}", 0) + 1
+    new = [i for i, (x, y) in enumerate(zip(bands_a, bands_b, strict=True)) if x != "accept" == y]
+    return {
+        "moves": dict(sorted(moves.items())),
+        "newly_accepted": len(new),
+        "newly_accepted_right": sum(right_b[i] for i in new),
+        "no_longer_accepted": sum(
+            x == "accept" != y for x, y in zip(bands_a, bands_b, strict=True)
+        ),
+    }
 
 
 def compare(paths: Paths, labels: list[str], split: str, version: str | None, log=print) -> dict:
@@ -194,9 +229,11 @@ def compare(paths: Paths, labels: list[str], split: str, version: str | None, lo
                 checks.append((f"{label} coefficients equal the frozen ones", same, None))
         results[label] = {"run": run.name, **_summary(m, expected, candidates)}
         t95 = results[label]["t_accept_95"]
+        t_abs = results[label]["t_abstain"]
         answerable = [e is not None for e in expected]
         per_product[label] = {
             "answerable": answerable,
+            "bands": [band_of(c, t95, t_abs) for c in candidates],
             "top1": [
                 bool(c) and e is not None and c[0][0] == e
                 for e, c in zip(expected, candidates, strict=True)
@@ -206,6 +243,10 @@ def compare(paths: Paths, labels: list[str], split: str, version: str | None, lo
     pairs = {}
     for a, b in zip(labels, labels[1:], strict=False):
         pa, pb = per_product[a], per_product[b]
+        nil = [not x for x in pa["answerable"]]
+        nil_a = [acc for acc, n in zip(pa["accepted"], nil, strict=True) if n]
+        nil_b = [acc for acc, n in zip(pb["accepted"], nil, strict=True) if n]
+        moves = transitions(pa["bands"], pb["bands"], pb["top1"])
         # top-1 accuracy is defined on products whose concept is in the catalog
         ans = pa["answerable"]
         pa = pa | {"top1": [x for x, keep in zip(pa["top1"], ans, strict=True) if keep]}
@@ -215,6 +256,13 @@ def compare(paths: Paths, labels: list[str], split: str, version: str | None, lo
                 [float(x) for x in pa["top1"]], [float(x) for x in pb["top1"]]
             ),
             "mcnemar_p_top1": mcnemar_p(pa["top1"], pb["top1"]),
+            "nil_accept_rate_diff_ci95": bootstrap_diff(
+                [float(x) for x in nil_a], [float(x) for x in nil_b]
+            )
+            if nil_a
+            else None,
+            "mcnemar_p_nil_accepted": mcnemar_p(nil_a, nil_b) if nil_a else None,
+            "transitions": moves,
             "coverage_diff_ci95": bootstrap_diff(
                 [float(x) for x in pa["accepted"]], [float(x) for x in pb["accepted"]]
             ),

@@ -38,8 +38,28 @@ def test_freeze_then_paired_test_comparison(built_root):
     report = compare(p, labels, "test", "v0.0.1", **QUIET)
     assert all(ok for _, ok, _ in report["checks"]), report["checks"]
     assert set(report["paired"]) == {"rules-stage4 vs rules-stage3"}
+    pair = report["paired"]["rules-stage4 vs rules-stage3"]
+    assert sum(pair["transitions"]["moves"].values()) == 30
     assert (out / "test_comparison.json").exists()
     # data changed after the freeze -> the check fails
     (p.splits / "test.txt").write_text("changed\n")
     bad = compare(p, labels, "dev", "v0.0.1", **QUIET)
     assert not bad["checks"][0][1]
+
+
+def test_band_transitions():
+    from dmb.compare import band_of, transitions
+
+    assert band_of([], 0.9, 0.1) == "abstain"
+    assert band_of([("a", 0.95)], 0.9, 0.1) == "accept"
+    assert band_of([("a", 0.5)], 0.9, 0.1) == "review"
+    assert band_of([("a", 0.05)], 0.9, 0.1) == "abstain"
+    assert band_of([("a", 0.95)], None, None) == "review"  # never reaches the target precision
+    t = transitions(
+        ["review", "review", "accept", "accept", "abstain"],
+        ["accept", "accept", "accept", "review", "abstain"],
+        [True, False, True, True, False],
+    )
+    assert t["newly_accepted"] == 2 and t["newly_accepted_right"] == 1
+    assert t["no_longer_accepted"] == 1
+    assert t["moves"]["review->accept"] == 2 and t["moves"]["accept->review"] == 1
