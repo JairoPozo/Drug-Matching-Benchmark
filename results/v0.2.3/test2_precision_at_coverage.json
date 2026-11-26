@@ -1,0 +1,42 @@
+{
+  "rules-stage5@wilson": {
+    "run": "20261126-003634_rules-stage5@wilson_test2",
+    "precision_at_coverage": {
+      "0.05": 1.0,
+      "0.10": 1.0,
+      "0.20": 0.9875,
+      "0.40": 0.9825,
+      "0.60": 0.97
+    }
+  },
+  "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+    "run": "20261126-003653_rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson_test2",
+    "precision_at_coverage": {
+      "0.05": 0.97,
+      "0.10": 0.985,
+      "0.20": 0.9925,
+      "0.40": 0.99125,
+      "0.60": 0.9766666666666667
+    }
+  },
+  "sapbert-inputfull-scorecal@wilson": {
+    "run": "20261126-145029_sapbert-inputfull-scorecal@wilson_test2",
+    "precision_at_coverage": {
+      "0.05": 0.99,
+      "0.10": 0.99,
+      "0.20": 0.9825,
+      "0.40": 0.965,
+      "0.60": 0.9275
+    }
+  },
+  "sapbert-inputshort-scorecal@wilson": {
+    "run": "20261126-145032_sapbert-inputshort-scorecal@wilson_test2",
+    "precision_at_coverage": {
+      "0.05": 1.0,
+      "0.10": 1.0,
+      "0.20": 0.995,
+      "0.40": 0.97,
+      "0.60": 0.9533333333333334
+    }
+  }
+}

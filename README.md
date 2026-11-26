@@ -69,6 +69,14 @@ Output: `(product, concept, confidence)`.
 > for 71.0% of the products in the catalog, against 84.1% for the logistic regression (paired
 > difference −13.1 pts, 95% CI −15.1 to −11.1), and no risk-controlled rule finds a threshold at 95%
 > precision: even its most confident 5% of products are 93.0% precise.
+>
+> **v0.2.3: comparison with SapBERT**, a state-of-the-art biomedical entity linker, indexing the
+> RxNorm names of the catalog concepts. Pre-registered in `results/v0.2.3/plan.md`, evaluated once
+> from tag `v0.2.3-pretest`, results in `results/v0.2.3/resultados.md` (Spanish). On test2, SapBERT
+> with short queries ranks better than the rules generator (top-1 87.9% vs 84.1%, paired difference
+> +3.8 pts, 95% CI 2.4 to 5.3) and accepts fewer products that are not in the catalog (5 vs 19 of
+> 175), but under the same 95% Wilson rule it covers 40.5% of products against 64.6%. With Wilson
+> and Learn then Test, all four SapBERT configurations kept precision above 95%.
 
 ## Results (test split, v0.1.0)
 
@@ -234,10 +242,12 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ├── results/v0.2.0/       # pre-registration, dev experiments, freeze, test2 results and analysis
 ├── results/v0.2.1/       # threshold rules with a formal guarantee: plan, freeze, test2, resampling
 ├── results/v0.2.2/       # RxNav baseline: plan, dev runs, freeze, test2 results
+├── results/v0.2.3/       # SapBERT baseline: plan, dev runs, freeze, test2 results
 ├── scripts/              # one-off analyses (test2_analysis.py, test_secondary.py,
 │                         #   pharmacist_review.py, threshold_resampling.py,
-│                         #   precision_at_coverage.py) and the RxNav download
-│                         #   (rxnav_queries.py, rxnav_fetch.py)
+│                         #   precision_at_coverage.py), the RxNav download
+│                         #   (rxnav_queries.py, rxnav_fetch.py) and the SapBERT candidates
+│                         #   (sapbert_names.py, sapbert_embed.py)
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/
@@ -248,7 +258,7 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 │   ├── parse.py          # query text and catalog names -> ingredients, strengths, form, route
 │   ├── strength.py       # strength normalization and learned conversion factors
 │   ├── forms.py          # dose form compatibility table learned from train
-│   ├── matchers/         # base interface, dummy, rules (stages 1-5), rxnav (cached responses)
+│   ├── matchers/         # base interface, dummy, rules (stages 1-5), rxnav and sapbert (cached candidates)
 │   ├── metrics.py        # ranking, decisions, calibration, bands, threshold rules
 │   ├── evaluate.py       # metrics.json, pr_curve, calibration.csv, predictions.parquet
 │   ├── rxnav.py          # RxNav queries and cached responses (v0.2.2)
