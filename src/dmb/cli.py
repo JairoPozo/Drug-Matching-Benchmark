@@ -54,9 +54,10 @@ def _parser() -> argparse.ArgumentParser:
     e.add_argument(
         "--threshold-rule",
         default="point",
-        choices=["point", "wilson"],
-        help="How the accept threshold is chosen on dev: observed precision (point) or the "
-        "Wilson 95%% lower bound of the precision (wilson)",
+        choices=["point", "wilson", "ltt", "sgr"],
+        help="How the accept threshold is chosen on dev: observed precision (point), the "
+        "Wilson 95%% lower bound of the precision (wilson), or a rule with a finite-sample "
+        "guarantee: Learn then Test (ltt) or selection with guaranteed risk (sgr)",
     )
     x = sub.add_parser("experiment", help="Dev-only experiments (ablations, scorers)")
     x.add_argument("--name", help="Cache and result name, e.g. base")
@@ -73,6 +74,12 @@ def _parser() -> argparse.ArgumentParser:
     c.add_argument("--split", default="test")
     c.add_argument("--version", help="Check against results/<version>/freeze.json and save there")
     c.add_argument("--matcher", action="append", required=True, metavar="LABEL")
+    c.add_argument(
+        "--against-first",
+        action="store_true",
+        help="Pair every matcher with the first one instead of consecutive pairs",
+    )
+    c.add_argument("--name", help="Suffix of the saved report: <split>_comparison_<name>.json")
     return p
 
 
@@ -131,7 +138,14 @@ def main(argv: list[str] | None = None) -> int:
 
             from dmb.compare import compare
 
-            report = compare(paths, args.matcher, args.split, args.version)
+            report = compare(
+                paths,
+                args.matcher,
+                args.split,
+                args.version,
+                against_first=args.against_first,
+                name=args.name,
+            )
             print(
                 json.dumps({"matchers": report["matchers"], "paired": report["paired"]}, indent=2)
             )

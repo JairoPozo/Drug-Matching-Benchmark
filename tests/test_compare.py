@@ -24,20 +24,23 @@ def test_mcnemar_and_bootstrap():
 
 def test_freeze_then_paired_test_comparison(built_root):
     p = Paths(built_root)
-    for stage in ("3", "4"):
+    for stage in ("2", "3", "4"):
         evaluate(p, "rules", "dev", params={"stage": stage}, **QUIET)
-    labels = ["rules-stage3", "rules-stage4"]
+    labels = ["rules-stage2", "rules-stage3", "rules-stage4"]
     out = freeze(p, "v0.0.1", labels, **QUIET)
     frozen = read_json(out / "freeze.json")
     assert set(frozen["matchers"]) == set(labels)
     assert "splits/test.txt" in frozen["files_sha256"]
     with pytest.raises(RuntimeError):
         freeze(p, "v0.0.1", labels, **QUIET)  # a freeze is never overwritten
-    for stage in ("3", "4"):
+    for stage in ("2", "3", "4"):
         evaluate(p, "rules", "test", final=True, params={"stage": stage}, **QUIET)
     report = compare(p, labels, "test", "v0.0.1", **QUIET)
     assert all(ok for _, ok, _ in report["checks"]), report["checks"]
-    assert set(report["paired"]) == {"rules-stage4 vs rules-stage3"}
+    assert set(report["paired"]) == {"rules-stage3 vs rules-stage2", "rules-stage4 vs rules-stage3"}
+    first = compare(p, labels, "test", "v0.0.1", against_first=True, name="first", **QUIET)
+    assert set(first["paired"]) == {"rules-stage3 vs rules-stage2", "rules-stage4 vs rules-stage2"}
+    assert (p.root / "results/v0.0.1/test_comparison_first.json").exists()
     pair = report["paired"]["rules-stage4 vs rules-stage3"]
     assert sum(pair["transitions"]["moves"].values()) == 30
     assert (out / "test_comparison.json").exists()

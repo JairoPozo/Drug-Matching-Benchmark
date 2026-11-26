@@ -190,7 +190,16 @@ def transitions(bands_a: list[str], bands_b: list[str], right_b: list[bool]) -> 
     }
 
 
-def compare(paths: Paths, labels: list[str], split: str, version: str | None, log=print) -> dict:
+def compare(
+    paths: Paths,
+    labels: list[str],
+    split: str,
+    version: str | None,
+    log=print,
+    against_first: bool = False,
+    name: str | None = None,
+) -> dict:
+    """Paired comparison on one split: consecutive pairs, or every label against the first."""
     frozen = read_json(paths.root / "results" / version / "freeze.json") if version else None
     checks = []
     if frozen:
@@ -230,7 +239,12 @@ def compare(paths: Paths, labels: list[str], split: str, version: str | None, lo
             "accepted": [bool(c) and t95 is not None and c[0][1] >= t95 for c in candidates],
         }
     pairs = {}
-    for a, b in zip(labels, labels[1:], strict=False):
+    pairings = (
+        [(labels[0], b) for b in labels[1:]]
+        if against_first
+        else list(zip(labels, labels[1:], strict=False))
+    )
+    for a, b in pairings:
         pa, pb = per_product[a], per_product[b]
         nil = [not x for x in pa["answerable"]]
         nil_a = [acc for acc, n in zip(pa["accepted"], nil, strict=True) if n]
@@ -264,7 +278,8 @@ def compare(paths: Paths, labels: list[str], split: str, version: str | None, lo
         "paired": pairs,
     }
     if version:
-        write_json(paths.root / "results" / version / f"{split}_comparison.json", report)
+        suffix = f"_{name}" if name else ""
+        write_json(paths.root / "results" / version / f"{split}_comparison{suffix}.json", report)
     for name, ok, detail in checks:
         log(
             f"[check] {'OK  ' if ok else 'FAIL'} {name}"

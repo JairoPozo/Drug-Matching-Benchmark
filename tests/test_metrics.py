@@ -68,3 +68,36 @@ def test_wilson_threshold_rule_is_stricter():
     assert pick_threshold(curve, 0.95, "wilson")["threshold"] == 0.8
     # 30/30 alone is not enough evidence: lower bound ~0.89
     assert pick_threshold(curve[:1], 0.95, "wilson") is None
+
+
+def test_ltt_stops_at_the_first_threshold_that_fails():
+    # high precision, then a bad stretch, then high again: the Wilson rule jumps over the bad
+    # stretch, fixed-sequence testing stops before it
+    curve = [
+        {"threshold": 0.99, "n_accepted": 200, "precision": 1.0, "recall": 0.1},
+        {"threshold": 0.95, "n_accepted": 400, "precision": 398 / 400, "recall": 0.2},
+        {"threshold": 0.90, "n_accepted": 420, "precision": 390 / 420, "recall": 0.21},
+        {"threshold": 0.85, "n_accepted": 2000, "precision": 1940 / 2000, "recall": 0.9},
+    ]
+    ltt = pick_threshold(curve, 0.95, "ltt")
+    assert ltt["threshold"] == 0.901 and ltt["n_accepted"] == 400  # last grid value before 0.90
+    assert pick_threshold(curve, 0.95, "wilson")["threshold"] == 0.85
+
+
+def test_sgr_bound_meets_the_target():
+    import math
+
+    from scipy.stats import beta
+
+    # 1000 products, scores from 1.0 down: the first 600 right, then 1 wrong in every 20
+    expected = ["A"] * 1000
+    candidates = [[("A" if i < 600 or i % 20 else "X", 1 - i / 1000)] for i in range(1000)]
+    row = pick_threshold(pr_curve(expected, candidates), 0.95, "sgr")
+    n = row["n_accepted"]
+    e = n - round(row["precision"] * n)
+    level = 0.05 / math.ceil(math.log2(1000))
+    assert n >= 600 and beta.ppf(1 - level, e + 1, n - e) < 0.05
+    # every answer wrong: no threshold can be guaranteed
+    bad = pr_curve(["A"] * 50, [[("X", 1 - i / 50)] for i in range(50)])
+    assert pick_threshold(bad, 0.95, "sgr") is None
+    assert pick_threshold(bad, 0.95, "ltt") is None

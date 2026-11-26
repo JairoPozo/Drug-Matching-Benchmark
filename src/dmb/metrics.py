@@ -143,7 +143,91 @@ def wilson(successes: int, n: int, z: float = 1.96) -> tuple[float, float] | Non
     return center - half, center + half
 
 
-THRESHOLD_RULES = ("point", "wilson")
+THRESHOLD_RULES = ("point", "wilson", "ltt", "sgr")
+# Rules with a finite-sample guarantee (ltt, sgr): with probability >= 1 - RISK_DELTA, the
+# precision of the accepted products on new data from the same distribution meets the target.
+RISK_DELTA = 0.05
+# Candidate thresholds for ltt, fixed in advance and tested from the strictest down. The sequence
+# starts at the target precision, 0.95. It first started at 0.99, where so few products score
+# that one unlucky calibration sample fails the first test and stops the sequence with nothing
+# accepted, as happened in some dev resamples. Changed on dev, before any ltt run on test2.
+LTT_GRID = tuple(round(0.95 - i * 0.001, 3) for i in range(951))
+
+
+def _errors(row: dict) -> int:
+    return row["n_accepted"] - round(row["precision"] * row["n_accepted"])
+
+
+def _ltt(curve: list[dict], target_precision: float, delta: float = RISK_DELTA) -> dict | None:
+    """Learn then Test (Angelopoulos et al.) with fixed-sequence testing.
+
+    For each grid threshold, from the strictest down, an exact binomial test of
+    H0: error rate of the accepted products > 1 - target. The sequence continues while H0 is
+    rejected at level delta and stops at the first threshold where it is not; the last rejected
+    threshold is returned. Fixed-sequence testing needs no multiplicity correction.
+    """
+    import numpy as np
+    from scipy.stats import binom
+
+    if not curve:
+        return None
+    rows = sorted(curve, key=lambda r: r["threshold"])
+    thresholds = np.array([r["threshold"] for r in rows])
+    grid = np.array(LTT_GRID)
+    # each grid threshold accepts the same products as the row with the smallest threshold above it
+    idx = np.searchsorted(thresholds, grid, side="left")
+    inside = idx < len(rows)
+    safe = np.minimum(idx, len(rows) - 1)
+    n = np.where(inside, np.array([r["n_accepted"] for r in rows])[safe], 0)
+    e = np.where(inside, np.array([_errors(r) for r in rows])[safe], 0)
+    p_values = np.where(n > 0, binom.cdf(e, np.maximum(n, 1), 1 - target_precision), 1.0)
+    fails = np.flatnonzero(p_values > delta)
+    stop = int(fails[0]) if fails.size else len(grid)
+    if stop == 0:  # nothing accepted with enough evidence, or no evidence at all
+        return None
+    return {**rows[int(idx[stop - 1])], "threshold": float(grid[stop - 1])}
+
+
+def _sgr(curve: list[dict], target_precision: float, delta: float = RISK_DELTA) -> dict | None:
+    """Selection with guaranteed risk (Geifman and El-Yaniv, 2017, Algorithm 1).
+
+    Binary search over the sorted scores for ceil(log2 m) steps. At each tested threshold the
+    one-sided Clopper-Pearson upper bound of the error rate of the accepted products, at level
+    delta / ceil(log2 m), is compared with the target risk. Returns the lowest tested threshold
+    whose bound is below the target.
+    """
+    import bisect
+    import math
+
+    from scipy.stats import beta
+
+    r_star = 1 - target_precision
+    rows = sorted(curve, key=lambda r: -r["threshold"])
+    if not rows:
+        return None
+    cumulative = [r["n_accepted"] for r in rows]
+    m = cumulative[-1]
+    steps = max(1, math.ceil(math.log2(m))) if m > 1 else 1
+    level = delta / steps
+
+    def row_at(z: int) -> dict:  # z-th lowest score (1-based) and every score above it
+        return rows[bisect.bisect_left(cumulative, m - z + 1)]
+
+    def bound(row: dict) -> float:
+        n, e = row["n_accepted"], _errors(row)
+        return 1.0 if e >= n else float(beta.ppf(1 - level, e + 1, n - e))
+
+    z_min, z_max, best = 1, m, None
+    for _ in range(steps):
+        z = math.ceil((z_min + z_max) / 2)
+        row = row_at(z)
+        if bound(row) < r_star:
+            z_max = z
+            if best is None or row["threshold"] < best["threshold"]:
+                best = row
+        else:
+            z_min = z
+    return best
 
 
 def pick_threshold(curve: list[dict], target_precision: float, rule: str = "point") -> dict | None:
@@ -151,10 +235,17 @@ def pick_threshold(curve: list[dict], target_precision: float, rule: str = "poin
 
     rule "point": observed precision >= target.
     rule "wilson": the lower bound of the Wilson 95% interval of the precision >= target, so the
-    target still holds, with 95% confidence, on the population the sample comes from.
+    target still holds, with 95% confidence, on the population the sample comes from. Every
+    threshold is checked on its own, with no correction for checking many.
+    rule "ltt": Learn then Test with fixed-sequence testing (see _ltt).
+    rule "sgr": selection with guaranteed risk (see _sgr).
     """
     if rule not in THRESHOLD_RULES:
         raise ValueError(f"threshold rule must be one of {THRESHOLD_RULES}")
+    if rule == "ltt":
+        return _ltt(curve, target_precision)
+    if rule == "sgr":
+        return _sgr(curve, target_precision)
 
     def meets(row: dict) -> bool:
         if rule == "point":

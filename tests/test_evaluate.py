@@ -187,3 +187,11 @@ def test_threshold_rule_is_part_of_the_label(built_root):
         p, "rules", "test", final=True, params={"stage": "4"}, threshold_rule="wilson", **QUIET
     )
     assert read_json(test / "metrics.json")["thresholds_from"] == run.name
+
+
+def test_guaranteed_threshold_rules_run_on_dev(built_root):
+    p = Paths(built_root)
+    for rule in ("ltt", "sgr"):
+        run = evaluate(p, "rules", "dev", params={"stage": "4"}, threshold_rule=rule, **QUIET)
+        m = read_json(run / "metrics.json")
+        assert run.name.endswith(f"_rules-stage4@{rule}_dev") and m["threshold_rule"] == rule
