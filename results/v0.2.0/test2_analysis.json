@@ -1,0 +1,151 @@
+{
+  "note": "Exploratory, written after seeing test2. Does not change H1-H4.",
+  "baseline": "rules-stage5@wilson",
+  "v0.2.0": "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson",
+  "accept_transitions": {
+    "newly_accepted": 199,
+    "newly_accepted_right": 164,
+    "newly_accepted_wrong_not_in_catalog": 13,
+    "newly_accepted_wrong_in_catalog": 22,
+    "no_longer_accepted": 40,
+    "no_longer_accepted_were_right": 26
+  },
+  "net": {
+    "correct_accepts": [
+      1243,
+      1379
+    ],
+    "false_accepts": [
+      49,
+      72
+    ],
+    "extra_correct": 136,
+    "extra_false": 23,
+    "incremental_precision": 0.8553
+  },
+  "not_in_catalog": {
+    "products": 175,
+    "distinct_held_out_concepts": 120,
+    "accepted_by_both": 15,
+    "only_baseline": 4,
+    "only_v0.2.0": 13,
+    "by_matcher": {
+      "rules-stage5@wilson": {
+        "accepted": 19,
+        "difference_to_held_out_concept": {
+          "dose form": 8,
+          "quantity": 5,
+          "other (name, salt, qualifier)": 3,
+          "dose form + quantity": 2,
+          "quantity + strength": 1
+        },
+        "distinct_held_out_concepts": 14,
+        "largest_clusters": [
+          [
+            "acetaminophen 32.5 MG/ML / dextromethorphan hydrobromide 1 MG/ML / guaifenesin 20 MG/ML / phenylephrine hydrochloride 0.5 MG/ML Oral Solution",
+            3
+          ],
+          [
+            "salicylic acid 20 MG/ML Medicated Liquid Soap",
+            3
+          ],
+          [
+            "60 ACTUAT fluticasone propionate 0.1 MG/ACTUAT / salmeterol 0.05 MG/ACTUAT Dry Powder Inhaler",
+            2
+          ]
+        ]
+      },
+      "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+        "accepted": 28,
+        "difference_to_held_out_concept": {
+          "dose form": 19,
+          "dose form + quantity": 3,
+          "quantity + strength": 2,
+          "quantity": 2,
+          "other (name, salt, qualifier)": 2
+        },
+        "distinct_held_out_concepts": 13,
+        "largest_clusters": [
+          [
+            "salicylic acid 20 MG/ML Medicated Liquid Soap",
+            8
+          ],
+          [
+            "lidocaine 50 MG/ML Rectal Cream",
+            5
+          ],
+          [
+            "acetaminophen 32.5 MG/ML / dextromethorphan hydrobromide 1 MG/ML / guaifenesin 20 MG/ML / phenylephrine hydrochloride 0.5 MG/ML Oral Solution",
+            3
+          ]
+        ]
+      }
+    }
+  },
+  "h4_subgroups": {
+    "rules-stage5@wilson": {
+      "route=dental": {
+        "n": 51,
+        "n_nil": 1,
+        "accuracy@1": 0.36,
+        "end_to_end_accuracy": 0.19607843137254902,
+        "false_accept_rate": 0.375,
+        "coverage": 0.3137254901960784,
+        "accepted": 16,
+        "false_accepts": 6
+      },
+      "route=inhalation": {
+        "n": 39,
+        "n_nil": 5,
+        "accuracy@1": 0.23529411764705882,
+        "end_to_end_accuracy": 0.20512820512820512,
+        "false_accept_rate": 0.3333333333333333,
+        "coverage": 0.23076923076923078,
+        "accepted": 9,
+        "false_accepts": 3
+      },
+      "kits": {
+        "n": 28,
+        "n_nil": 2,
+        "accuracy@1": 0.0,
+        "end_to_end_accuracy": 0.07142857142857142,
+        "false_accept_rate": null,
+        "coverage": 0.0,
+        "accepted": 0,
+        "false_accepts": null
+      }
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+      "route=dental": {
+        "n": 51,
+        "n_nil": 1,
+        "accuracy@1": 0.36,
+        "end_to_end_accuracy": 0.2549019607843137,
+        "false_accept_rate": 0.13333333333333333,
+        "coverage": 0.29411764705882354,
+        "accepted": 15,
+        "false_accepts": 2
+      },
+      "route=inhalation": {
+        "n": 39,
+        "n_nil": 5,
+        "accuracy@1": 0.23529411764705882,
+        "end_to_end_accuracy": 0.2564102564102564,
+        "false_accept_rate": 0.2222222222222222,
+        "coverage": 0.23076923076923078,
+        "accepted": 9,
+        "false_accepts": 2
+      },
+      "kits": {
+        "n": 28,
+        "n_nil": 2,
+        "accuracy@1": 0.0,
+        "end_to_end_accuracy": 0.07142857142857142,
+        "false_accept_rate": null,
+        "coverage": 0.0,
+        "accepted": 0,
+        "false_accepts": null
+      }
+    }
+  }
+}

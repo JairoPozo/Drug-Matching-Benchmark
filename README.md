@@ -20,11 +20,24 @@ Output: `(product, concept, confidence)`.
 > Status: **v0.1.0.** Test evaluated once per matcher on 2026-11-25, from commit `2a8ae99`
 > (tag `v0.1.0-pretest`), with thresholds and coefficients frozen on dev beforehand.
 >
-> **v0.2.0 in progress.** A second, independent test split (`test2`, 2,000 products drawn from the
-> former train pool, no group shared with any other split) was frozen before any v0.2.0
-> experiment; the plan, hypotheses and success criteria are pre-registered in
-> `results/v0.2.0/plan.md`. Because `test2` left train, train now has 30,375 products: the
-> v0.1.0 numbers below reproduce from tag `v0.1.0`.
+> **v0.2.0: evaluated on `test2`** (2,000 products, 175 not in the catalog), a second independent
+> split frozen before any v0.2.0 experiment, once per matcher, from tag `v0.2.0-pretest`. The plan
+> and hypotheses were pre-registered in `results/v0.2.0/plan.md`; all of them are reported in
+> `results/v0.2.0/resultados.md` (Spanish), met or not:
+>
+> | test2 | Stage 5, Wilson threshold | v0.2.0 (gradient boosting + v2 features, Wilson) |
+> |---|---:|---:|
+> | Automatic coverage | 64.6% | **72.6%** (+7.95 pts, paired 95% CI 6.5–9.5) |
+> | Precision of accepts (Wilson 95% CI) | 96.2% (95.0–97.1) | 95.0% (93.8–96.0) |
+> | Not-in-catalog products accepted (of 175) | 19 | 28 (worse, McNemar p = 0.049) |
+>
+> - Choosing the accept threshold on dev with the Wilson lower bound kept precision at or above
+>   95% on new data; the plain observed-precision threshold missed it on both test splits (94.9%
+>   and 94.6%).
+> - The v0.2.0 scorer adds coverage, but the extra accepts are riskier (incremental precision
+>   85.5%), and it accepts more products that are not in the catalog, mostly sibling dose forms.
+> - Because `test2` left train, train now has 30,375 products: the v0.1.0 numbers below reproduce
+>   from tag `v0.1.0`.
 
 ## Results (test split, v0.1.0)
 
@@ -187,6 +200,8 @@ Coverage is the share of queries accepted automatically at ≥ 95% precision.
 ├── sources.json          # pinned source versions
 ├── splits/               # frozen dev/test IDs + derived train IDs (committed)
 ├── results/v0.1.0/       # freeze (dev thresholds, coefficients, data hashes) + test results
+├── results/v0.2.0/       # pre-registration, dev experiments, freeze, test2 results and analysis
+├── scripts/              # one-off analyses (test2_analysis.py)
 ├── data/                 # raw downloads and processed parquet files (git-ignored)
 ├── reports/              # one folder per evaluation run (git-ignored)
 ├── src/dmb/

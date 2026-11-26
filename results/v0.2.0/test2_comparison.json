@@ -1,0 +1,244 @@
+{
+  "split": "test2",
+  "version": "v0.2.0",
+  "checks": [
+    [
+      "data and splits match the freeze",
+      true,
+      []
+    ],
+    [
+      "rules-stage4 used the frozen dev thresholds",
+      true,
+      "20261126-000400_rules-stage4_dev"
+    ],
+    [
+      "rules-stage5 used the frozen dev thresholds",
+      true,
+      "20261126-000417_rules-stage5_dev"
+    ],
+    [
+      "rules-stage5 coefficients equal the frozen ones",
+      true,
+      null
+    ],
+    [
+      "rules-stage5@wilson used the frozen dev thresholds",
+      true,
+      "20261126-000436_rules-stage5@wilson_dev"
+    ],
+    [
+      "rules-stage5@wilson coefficients equal the frozen ones",
+      true,
+      null
+    ],
+    [
+      "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson used the frozen dev thresholds",
+      true,
+      "20261126-001627_rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson_dev"
+    ]
+  ],
+  "matchers": {
+    "rules-stage4": {
+      "run": "20261126-002945_rules-stage4_test2",
+      "accuracy@1": 0.8410958904109589,
+      "recall@5": 0.9227397260273973,
+      "ece": 0.09172257993808601,
+      "brier": 0.11355582006324917,
+      "t_accept_95": 0.992134831460674,
+      "t_abstain": null,
+      "n_nil": 175,
+      "nil_accept_rate": 0.05142857142857143,
+      "coverage": 0.506,
+      "accepted": 1012,
+      "accept_precision": 0.9545454545454546,
+      "accept_precision_ci95": [
+        0.9399022447790023,
+        0.9657507625402492
+      ],
+      "false_accepts": 46,
+      "false_accepts_on_nil": 9,
+      "nil_not_accepted": 0.9485714285714286,
+      "review_share": 0.4255,
+      "review_answer_in_top5": 0.940771349862259,
+      "abstain_share": 0.0685,
+      "abstain_not_in_catalog": 41,
+      "abstain_in_catalog": 96
+    },
+    "rules-stage5": {
+      "run": "20261126-003616_rules-stage5_test2",
+      "accuracy@1": 0.8410958904109589,
+      "recall@5": 0.9232876712328767,
+      "ece": 0.01810566331497288,
+      "brier": 0.09163712697686661,
+      "t_accept_95": 0.7512962554648643,
+      "t_abstain": 0.011780086330219203,
+      "n_nil": 175,
+      "nil_accept_rate": 0.14285714285714285,
+      "coverage": 0.6885,
+      "accepted": 1377,
+      "accept_precision": 0.9462599854756718,
+      "accept_precision_ci95": [
+        0.9330595554352586,
+        0.9569773611813902
+      ],
+      "false_accepts": 74,
+      "false_accepts_on_nil": 25,
+      "nil_not_accepted": 0.8571428571428571,
+      "review_share": 0.242,
+      "review_answer_in_top5": 0.904,
+      "abstain_share": 0.0695,
+      "abstain_not_in_catalog": 41,
+      "abstain_in_catalog": 98
+    },
+    "rules-stage5@wilson": {
+      "run": "20261126-003634_rules-stage5@wilson_test2",
+      "accuracy@1": 0.8410958904109589,
+      "recall@5": 0.9232876712328767,
+      "ece": 0.01810566331497288,
+      "brier": 0.09163712697686661,
+      "t_accept_95": 0.8285121963072183,
+      "t_abstain": 0.011780086330219203,
+      "n_nil": 175,
+      "nil_accept_rate": 0.10857142857142857,
+      "coverage": 0.646,
+      "accepted": 1292,
+      "accept_precision": 0.9620743034055728,
+      "accept_precision_ci95": [
+        0.9502142048593337,
+        0.9711947080818776
+      ],
+      "false_accepts": 49,
+      "false_accepts_on_nil": 19,
+      "nil_not_accepted": 0.8914285714285715,
+      "review_share": 0.2845,
+      "review_answer_in_top5": 0.9185022026431718,
+      "abstain_share": 0.0695,
+      "abstain_not_in_catalog": 41,
+      "abstain_in_catalog": 98
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson": {
+      "run": "20261126-003653_rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson_test2",
+      "accuracy@1": 0.8580821917808219,
+      "recall@5": 0.9298630136986301,
+      "ece": 0.027855256277643303,
+      "brier": 0.07916224029214906,
+      "t_accept_95": 0.7895487612326103,
+      "t_abstain": 0.05251598616402681,
+      "n_nil": 175,
+      "nil_accept_rate": 0.16,
+      "coverage": 0.7255,
+      "accepted": 1451,
+      "accept_precision": 0.9503790489317712,
+      "accept_precision_ci95": [
+        0.9379675025613602,
+        0.960412087354133
+      ],
+      "false_accepts": 72,
+      "false_accepts_on_nil": 28,
+      "nil_not_accepted": 0.84,
+      "review_share": 0.188,
+      "review_answer_in_top5": 0.920265780730897,
+      "abstain_share": 0.0865,
+      "abstain_not_in_catalog": 72,
+      "abstain_in_catalog": 101
+    }
+  },
+  "paired": {
+    "rules-stage5 vs rules-stage4": {
+      "accuracy@1_diff_ci95": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mcnemar_p_top1": 1.0,
+      "nil_accept_rate_diff_ci95": [
+        0.09142857142857143,
+        0.04,
+        0.14285714285714285
+      ],
+      "mcnemar_p_nil_accepted": 0.002493917942047119,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 137,
+          "accept->accept": 896,
+          "accept->review": 116,
+          "review->abstain": 2,
+          "review->accept": 481,
+          "review->review": 368
+        },
+        "newly_accepted": 481,
+        "newly_accepted_right": 425,
+        "no_longer_accepted": 116
+      },
+      "coverage_diff_ci95": [
+        0.1825,
+        0.16,
+        0.2045
+      ]
+    },
+    "rules-stage5@wilson vs rules-stage5": {
+      "accuracy@1_diff_ci95": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mcnemar_p_top1": 1.0,
+      "nil_accept_rate_diff_ci95": [
+        -0.03428571428571429,
+        -0.06285714285714286,
+        -0.011428571428571429
+      ],
+      "mcnemar_p_nil_accepted": 0.03125,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 139,
+          "accept->accept": 1292,
+          "accept->review": 85,
+          "review->review": 484
+        },
+        "newly_accepted": 0,
+        "newly_accepted_right": 0,
+        "no_longer_accepted": 85
+      },
+      "coverage_diff_ci95": [
+        -0.0425,
+        -0.051,
+        -0.034
+      ]
+    },
+    "rules-dropexpected_form_missing-featuresv2-scorergb-stage5@wilson vs rules-stage5@wilson": {
+      "accuracy@1_diff_ci95": [
+        0.016986301369863014,
+        0.009315068493150684,
+        0.024657534246575342
+      ],
+      "mcnemar_p_top1": 3.3053764732060564e-05,
+      "nil_accept_rate_diff_ci95": [
+        0.05142857142857143,
+        0.005714285714285714,
+        0.09142857142857143
+      ],
+      "mcnemar_p_nil_accepted": 0.049041748046875,
+      "transitions": {
+        "moves": {
+          "abstain->abstain": 138,
+          "abstain->review": 1,
+          "accept->accept": 1252,
+          "accept->review": 40,
+          "review->abstain": 35,
+          "review->accept": 199,
+          "review->review": 335
+        },
+        "newly_accepted": 199,
+        "newly_accepted_right": 164,
+        "no_longer_accepted": 40
+      },
+      "coverage_diff_ci95": [
+        0.0795,
+        0.065,
+        0.095
+      ]
+    }
+  }
+}
